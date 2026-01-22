@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Minecraft JS: Celestial Update</title>
+    <title>Minecraft JS: Lighting & Smooth Cam</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -27,123 +27,73 @@
                 linear-gradient(45deg, #3d2e26 25%, transparent 25%, transparent 75%, #3d2e26 75%, #3d2e26);
             background-size: 40px 40px;
             background-position: 0 0, 20px 20px;
-            box-shadow: inset 0 0 150px rgba(0,0,0,0.8);
         }
 
-        .logo-container {
-            position: relative;
-            margin-bottom: 60px;
-            animation: floatLogo 3s ease-in-out infinite;
-        }
+        .logo-container { margin-bottom: 50px; animation: floatLogo 3s ease-in-out infinite; position: relative; }
+        h1 { font-family: 'Courier New', monospace; font-size: 60px; color: #dcdcdc; margin: 0; text-shadow: 4px 4px 0 #3f3f3f; }
+        .splash-text { position: absolute; bottom: -20px; right: -60px; color: #ffff55; font-size: 24px; font-weight: bold; transform: rotate(-20deg); animation: pulseSplash 0.5s infinite alternate; }
+        #start-btn { padding: 15px 80px; font-size: 24px; color: #fff; background-color: #7c7c7c; border: 2px solid #000; cursor: pointer; box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #333; }
+        #start-btn:active { background: #555; box-shadow: inset 2px 2px 0 #333; }
 
-        h1 {
-            font-family: 'Courier New', monospace;
-            font-size: 60px; 
-            color: #dcdcdc; 
-            margin: 0;
-            letter-spacing: -2px;
-            text-shadow: 4px 4px 0 #3f3f3f, -1px -1px 0 #3f3f3f, 1px -1px 0 #3f3f3f, -1px 1px 0 #3f3f3f, 1px 1px 0 #3f3f3f;
-            font-weight: 900;
-        }
-
-        .splash-text {
-            position: absolute; bottom: -20px; right: -60px;
-            color: #ffff55; font-size: 24px; font-weight: bold;
-            transform: rotate(-20deg);
-            text-shadow: 2px 2px 0 #3f3f3f;
-            animation: pulseSplash 0.5s alternate infinite ease-in;
-            white-space: nowrap;
-        }
-
-        #start-btn {
-            position: relative; padding: 15px 80px; font-size: 24px;
-            color: #fff; background-color: #7c7c7c; border: none;
-            cursor: pointer; font-family: sans-serif;
-            text-shadow: 2px 2px 0 #333;
-            box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #333, 2px 2px 0 #000;
-            border: 2px solid #000; transition: background 0.1s;
-        }
-        #start-btn:hover { background-color: #8e8e8e; }
-        #start-btn:active { background-color: #555; box-shadow: inset 2px 2px 0 #333, inset -2px -2px 0 #aaa; }
-
-        @keyframes floatLogo { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        @keyframes floatLogo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes pulseSplash { 0% { transform: rotate(-20deg) scale(1); } 100% { transform: rotate(-20deg) scale(1.1); } }
 
-        /* --- PAUSE MENU --- */
-        #pause-menu {
-            display: none;
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 300px;
-            background: #2c2c2c;
-            border: 4px solid #fff;
-            padding: 20px;
-            z-index: 20000;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-        }
+        /* --- UI --- */
+        #pause-menu, #inv-screen { background: #2c2c2c; border: 4px solid #fff; padding: 20px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; z-index: 5000; text-align:center;}
+        .menu-btn { display: block; width: 100%; margin: 10px 0; padding: 10px; background: #555; color: white; border: 2px solid #111; cursor: pointer; font-family: monospace; }
+        .menu-btn:hover { background: #666; }
 
-        .pause-btn {
-            display: block; width: 100%; margin: 10px 0; padding: 10px;
-            background: #555; color: white; border: 2px solid #111;
-            cursor: pointer; font-family: monospace; font-size: 16px;
-        }
-        .pause-btn:hover { background: #666; border-color: #fff; }
-
-        /* --- VIEWPORT & WORLD --- */
-        #viewport {
-            position: relative; width: 850px; height: 600px; margin: 20px auto;
-            background-color: #87CEEB; border: 6px solid #333; overflow: hidden;
-            display: none; z-index: 1;
-        }
+        /* --- GAME WORLD --- */
+        #viewport { position: relative; width: 850px; height: 600px; margin: 20px auto; background-color: #87CEEB; border: 6px solid #333; overflow: hidden; display: none; }
+        #world { position: absolute; top: 0; left: 0; will-change: transform; z-index: 10; transform-origin: 0 0; background-color: transparent; }
+        
         #sun { position: absolute; width: 60px; height: 60px; background: #ffeb3b; border-radius: 50%; box-shadow: 0 0 40px #fff176; z-index: 1; }
         #moon { position: absolute; width: 50px; height: 50px; background: #eceff1; border-radius: 50%; box-shadow: 0 0 20px #fff; z-index: 1; }
         .cloud { position: absolute; background: white; border-radius: 10px; opacity: 0.8; z-index: 2; }
-        #world { position: absolute; top: 0; left: 0; will-change: transform; z-index: 10; transform-origin: 0 0; }
-        .block { position: absolute; width: 25px; height: 25px; }
-
-        /* --- PLAYER & FX --- */
-        .shaking { animation: shake 0.1s linear infinite; }
-        @keyframes shake { 0% { transform: translate(0, 0); } 25% { transform: translate(-2px, 1px); } 50% { transform: translate(2px, -1px); } 75% { transform: translate(-2px, -1px); } 100% { transform: translate(0, 0); } }
         
-        .particle { position: absolute; width: 8px; height: 8px; z-index: 15; pointer-events: none; opacity: 1; transition: transform 0.4s ease-out, opacity 0.4s ease-in; }
+        .block { position: absolute; width: 25px; height: 25px; box-sizing: border-box; transition: background-color 0.2s, opacity 0.2s; }
 
-        /* Textures */
+        /* --- TEXTURES --- */
+        .sky { background: transparent; } 
+        
+        /* CAVE AIR: Base color is Black. We control Opacity via JS based on light level. */
+        .cave-air { background-color: #000; border: none; } 
+
         .grass { background: #4caf50; border-top: 4px solid #8bc34a; }
-        .dirt { background: #795548; }
         .stone { background: #757575; border: 1px solid #616161; }
         .sand { background: #f4e1a1; border-top: 2px solid #e6cc80; }
         .sandstone { background: #d3b36b; border: 1px solid #c2a25a; }
         .wood { background: #5d4037; border: 2px solid #3e2723; }
-        .leaves { background: #2e7d32; opacity: 0.9; }
+        .leaves { background: #2e7d32; opacity: 0.9; border: 2px solid #1b5e20; }
         .cactus { background: #1b5e20; border-left: 4px dotted #4caf50; border-right: 4px dotted #4caf50; }
-        .coal { background: #424242; }
-        .iron { background: #d7ccc8; }
-        .gold { background: #ffd700; }
-        .diamond { background: #00e5ff; }
-        .sky { background: transparent; }
 
+        .dirt { background-color: #795548; background-image: radial-gradient(circle at 30% 30%, rgba(0,0,0,0.1) 2px, transparent 2.5px), radial-gradient(circle at 70% 70%, rgba(0,0,0,0.1) 2px, transparent 2.5px); }
+        .coal { background-color: #757575; background-image: radial-gradient(circle at 50% 50%, #212121 3px, transparent 4px), radial-gradient(circle at 20% 20%, #212121 2px, transparent 3px); border: 1px solid #616161; }
+        .iron { background-color: #757575; background-image: radial-gradient(circle at 50% 50%, #d7ccc8 3px, transparent 4px), radial-gradient(circle at 80% 80%, #d7ccc8 2px, transparent 3px); border: 1px solid #616161; }
+        .gold { background-color: #757575; background-image: radial-gradient(circle at 40% 40%, #ffeb3b 3px, transparent 4px), radial-gradient(circle at 70% 20%, #fbc02d 2px, transparent 3px); border: 1px solid #616161; }
+        .diamond { background-color: #757575; background-image: radial-gradient(circle at 50% 50%, #00e5ff 3px, transparent 4px), radial-gradient(circle at 20% 80%, #00bcd4 2px, transparent 3px); border: 1px solid #616161; }
+
+        /* --- PLAYER --- */
         #player { position: absolute; width: 22px; height: 44px; z-index: 100; transform-origin: bottom center; transition: transform 0.1s steps(3); }
         #p-head { width: 22px; height: 22px; background: #ffdbac; border: 2px solid #000; }
         #p-body { width: 18px; height: 22px; background: #0288d1; border: 2px solid #000; margin-left: 2px; border-top: none; }
-        
         #tool { position: absolute; top: 18px; right: -8px; transform-origin: left; transform: rotate(-40deg); transition: background 0.1s; }
         .swing { animation: swing 0.15s ease-in-out; }
         @keyframes swing { 0% { transform: rotate(-40deg); } 50% { transform: rotate(50deg); } 100% { transform: rotate(-40deg); } }
-
         #selector { position: absolute; width: 25px; height: 25px; border: 2px solid #fff; z-index: 90; pointer-events: none; }
+        .shaking { animation: shake 0.1s linear infinite; }
+        @keyframes shake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-2px, 1px); } 75% { transform: translate(2px, -1px); } }
+        .particle { position: absolute; width: 6px; height: 6px; z-index: 15; pointer-events: none; opacity: 1; transition: transform 0.4s ease-out, opacity 0.4s ease-in; }
 
-        /* --- UI ELEMENTS --- */
-        #inv-screen { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 550px; background: #2c2c2c; border: 4px solid #fff; padding: 20px; z-index: 5000; }
+        /* --- INVENTORY --- */
         .inv-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
         .slot { background: #444; padding: 5px; border: 2px solid #111; cursor: pointer; text-align: center; }
         .slot.active { border-color: #ffee58; background: #555; }
-
-        #hotbar { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; background: rgba(30, 30, 30, 0.9); padding: 6px; border: 3px solid #fff; border-radius: 6px; z-index: 10000; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        #hotbar { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; background: rgba(30,30,30,0.9); padding: 6px; border: 3px solid #fff; border-radius: 6px; z-index: 10000; }
         .hot-slot { width: 36px; height: 36px; background: #555; border: 2px solid #222; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
-        .hot-slot.active { border-color: #ffee58; background: #777; box-shadow: inset 0 0 0 1px #fff; transform: scale(1.05); }
-        .hot-key { position: absolute; top: 1px; left: 2px; font-size: 8px; color: #fff; font-family: monospace; z-index: 2; }
-        .hot-amount { position: absolute; bottom: 0; right: 2px; font-size: 10px; font-weight: bold; color: white; text-shadow: 1px 1px 0 #000; z-index: 2; }
-
+        .hot-slot.active { border-color: #ffee58; background: #777; transform: scale(1.05); }
+        .hot-key { position: absolute; top: 1px; left: 2px; font-size: 8px; color: #fff; font-family: monospace; }
+        .hot-amount { position: absolute; bottom: 0; right: 2px; font-size: 10px; font-weight: bold; color: white; text-shadow: 1px 1px 0 #000; }
         #debug { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 8px; font-size: 12px; z-index: 6000; }
     </style>
 </head>
@@ -152,15 +102,15 @@
     <div id="start-screen">
         <div class="logo-container">
             <h1>MINECRAFT<br>CELESTIAL</h1>
-            <div class="splash-text">Now with Wobble!</div>
+            <div class="splash-text">Smooth Cam + Light Rays!</div>
         </div>
         <button id="start-btn">Start Game</button>
     </div>
 
     <div id="pause-menu">
-        <h2 style="margin-top:0;">GAME PAUSED</h2>
-        <button class="pause-btn" id="resume-btn">Continue Game</button>
-        <button class="pause-btn" id="exit-btn">Exit to Menu</button>
+        <h2>GAME PAUSED</h2>
+        <button class="menu-btn" id="resume-btn">Continue</button>
+        <button class="menu-btn" id="exit-btn">Exit to Menu</button>
     </div>
 
     <div id="debug">Waiting for start...</div>
@@ -176,39 +126,38 @@
     </div>
 
     <div id="inv-screen">
-        <h2 style="margin-top:0;">INVENTORY</h2>
+        <h2>INVENTORY</h2>
         <div class="inv-grid" id="inv-grid"></div>
-        <button id="close-inv-btn" style="margin-top:20px; width:100%; padding: 10px; cursor:pointer;">CLOSE (E)</button>
+        <button class="menu-btn" id="close-inv-btn" style="margin-top:20px;">Close (E)</button>
     </div>
 
     <script>
-        // --- CONFIGURATION ---
+        // --- CONFIG ---
         const B_SIZE = 25;
         const COLS = 300; 
-        const ROWS = 50; 
+        const ROWS = 60; 
         const ZOOM = 1.6; 
-
-        const TYPES = { SKY:0, GRASS:1, DIRT:2, STONE:3, COAL:4, IRON:5, GOLD:6, DIAMOND:7, EMERALD:8, SAND:9, SANDSTONE:10, WOOD:11, LEAVES:12, CACTUS:13 };
-        const CLASSES = ["sky", "grass", "dirt", "stone", "coal", "iron", "gold", "diamond", "emerald", "sand", "sandstone", "wood", "leaves", "cactus"];
+        const TYPES = { SKY:0, GRASS:1, DIRT:2, STONE:3, COAL:4, IRON:5, GOLD:6, DIAMOND:7, EMERALD:8, SAND:9, SANDSTONE:10, WOOD:11, LEAVES:12, CACTUS:13, CAVE:14 };
+        const CLASSES = ["sky", "grass", "dirt", "stone", "coal", "iron", "gold", "diamond", "emerald", "sand", "sandstone", "wood", "leaves", "cactus", "cave-air"];
         
-        let inventory = {};
-        for(let i=1; i<CLASSES.length; i++) inventory[i] = 0;
-        
+        let inventory = {}; for(let i=1; i<CLASSES.length-1; i++) inventory[i] = 0; 
         let equipped = 1;
-        let invOpen = false;
-        let isPaused = false; // New Pause State
-        let mapData = [];
+        let invOpen = false, isPaused = false;
+        
+        // Map Data
+        let mapData = []; 
         let blockDivs = [];
-        let px = 20, py = 5; 
-        let vx = 0, vy = 0, grounded = false;
-        let keys = {};
-        let gameTime = 0;
-        const clouds = [];
-        let walkCycle = 0;
-        let facingDir = 1; 
-        let isBreaking = false; 
+        let lightLevels = []; // Stores 0-15 light value
+        let surfaceHeights = []; 
 
-        // --- DOM ELEMENTS ---
+        // Physics & Cam
+        let px = 20, py = 5, vx = 0, vy = 0, grounded = false;
+        // smoothCam stores the ACTUAL camera position for smoothing
+        let smoothCam = { x: 0, y: 0 }; 
+        
+        let keys = {}, gameTime = 0, clouds = [];
+        let walkCycle = 0, facingDir = 1, isBreaking = false; 
+
         const world = document.getElementById('world');
         const viewport = document.getElementById('viewport');
         const player = document.getElementById('player');
@@ -218,364 +167,395 @@
         const moon = document.getElementById('moon');
         const startBtn = document.getElementById('start-btn');
         const invScreen = document.getElementById('inv-screen');
-        const closeInvBtn = document.getElementById('close-inv-btn');
-        
-        // Pause Menu Elements
-        const pauseMenu = document.getElementById('pause-menu');
-        const resumeBtn = document.getElementById('resume-btn');
-        const exitBtn = document.getElementById('exit-btn');
 
-        // --- EVENT LISTENERS ---
         startBtn.addEventListener('click', () => {
             document.getElementById('start-screen').style.display = 'none';
             viewport.style.display = 'block';
             document.getElementById('hotbar').style.display = 'flex';
-            initWorld();
-            initClouds();
-            updateHandAppearance();
+            initWorld(); initClouds(); updateHandAppearance();
+            
+            // Set initial cam pos
+            smoothCam.x = -(px * B_SIZE * ZOOM) + 425;
+            smoothCam.y = -(py * B_SIZE * ZOOM) + 300;
+            
             requestAnimationFrame(gameLoop);
         });
 
-        closeInvBtn.addEventListener('click', toggleInv);
+        document.getElementById('close-inv-btn').addEventListener('click', toggleInv);
+        document.getElementById('resume-btn').addEventListener('click', togglePause);
+        document.getElementById('exit-btn').addEventListener('click', () => location.reload());
 
-        // Pause Menu Buttons
-        resumeBtn.addEventListener('click', togglePause);
-        exitBtn.addEventListener('click', () => {
-            location.reload(); // Simple refresh to go back to menu
-        });
+        function toggleInv() { if (isPaused) return; invOpen = !invOpen; invScreen.style.display = invOpen ? 'block' : 'none'; }
+        function togglePause() { isPaused = !isPaused; document.getElementById('pause-menu').style.display = isPaused ? 'block' : 'none'; }
+        function setEquipped(id) { equipped = id; updateInvUI(); updateHandAppearance(); }
 
-        function toggleInv() {
-            if (isPaused) return; // Cannot open inv while paused
-            invOpen = !invOpen;
-            invScreen.style.display = invOpen ? 'block' : 'none';
-        }
-
-        function togglePause() {
-            isPaused = !isPaused;
-            pauseMenu.style.display = isPaused ? 'block' : 'none';
-        }
-
-        function setEquipped(id) {
-            equipped = id;
-            updateInvUI();
-            updateHandAppearance();
-        }
-
-        // --- WORLD GENERATION ---
         function initClouds() {
             for(let i=0; i<8; i++) {
-                let cloud = {
-                    x: Math.random() * 800,
-                    y: 20 + Math.random() * 150,
-                    w: 60 + Math.random() * 100,
-                    h: 20 + Math.random() * 30,
-                    speed: 0.1 + Math.random() * 0.3,
-                    el: document.createElement('div')
-                };
+                let cloud = { x: Math.random()*800, y: 20+Math.random()*150, w: 60+Math.random()*100, h: 20+Math.random()*30, speed: 0.1+Math.random()*0.3, el: document.createElement('div') };
                 cloud.el.className = 'cloud';
-                cloud.el.style.width = cloud.w + 'px';
-                cloud.el.style.height = cloud.h + 'px';
+                cloud.el.style.width = cloud.w + 'px'; cloud.el.style.height = cloud.h + 'px';
                 viewport.appendChild(cloud.el);
                 clouds.push(cloud);
             }
         }
 
+        // --- LIGHTING ENGINE (Breadth-First Search) ---
+        function updateLighting() {
+            // 1. Reset Light Array
+            // SKY blocks = 15. CAVE/SOLID blocks = 0 initially.
+            // Queue holds {r,c} of blocks that have light to spread.
+            let queue = [];
+            
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if (mapData[r][c] === TYPES.SKY) {
+                        lightLevels[r][c] = 15;
+                        queue.push({r, c});
+                    } else {
+                        lightLevels[r][c] = 0;
+                    }
+                }
+            }
+
+            // 2. Spread Light (BFS)
+            // Directions: Up, Down, Left, Right
+            const dirs = [[0,1], [0,-1], [1,0], [-1,0]];
+
+            while(queue.length > 0) {
+                let curr = queue.shift();
+                let r = curr.r;
+                let c = curr.c;
+                let currentLight = lightLevels[r][c];
+
+                if (currentLight <= 0) continue;
+
+                // Attempt to spread to 4 neighbors
+                for(let d of dirs) {
+                    let nr = r + d[0];
+                    let nc = c + d[1];
+
+                    // Bounds Check
+                    if(nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+                        // We can only pass light through SKY or CAVE blocks (transparent)
+                        // Note: Solid blocks block light, so we don't spread INTO them, 
+                        // but we can light them up slightly if we wanted (optional). 
+                        // Here we only spread INTO air blocks for the gradient.
+                        
+                        let type = mapData[nr][nc];
+                        let canPass = (type === TYPES.CAVE || type === TYPES.SKY);
+                        
+                        // If neighbor can accept light, and its current light is less than (current - 1)
+                        if (canPass && lightLevels[nr][nc] < currentLight - 1) {
+                            lightLevels[nr][nc] = currentLight - 1;
+                            queue.push({r: nr, c: nc});
+                        }
+                    }
+                }
+            }
+
+            // 3. Update Visuals for CAVE blocks
+            // We only need to adjust opacity of .cave-air blocks.
+            // Light 15 = Opacity 0 (Transparent). Light 0 = Opacity 1 (Black).
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if (mapData[r][c] === TYPES.CAVE) {
+                        let div = blockDivs[r][c];
+                        if (div) {
+                            let lvl = lightLevels[r][c];
+                            // Calculate opacity: Max light (15) -> 0 opacity. Min light (0) -> 1 opacity.
+                            // We use a slight curve or linear mapping.
+                            let opacity = 1 - (lvl / 15);
+                            div.style.opacity = opacity;
+                        }
+                    }
+                }
+            }
+        }
+
         function createBlock(r, c, type) {
+            if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
+            if(blockDivs[r][c]) { blockDivs[r][c].remove(); blockDivs[r][c] = null; }
+            
+            mapData[r][c] = type;
+
             if (type === TYPES.SKY) return;
+
             const div = document.createElement('div');
             div.className = 'block ' + CLASSES[type];
             div.style.left = (c * B_SIZE) + "px";
             div.style.top = (r * B_SIZE) + "px";
+            
+            // If it's a cave block, set initial opacity based on existing light data (if any)
+            if (type === TYPES.CAVE && lightLevels[r] && lightLevels[r][c] !== undefined) {
+                div.style.opacity = 1 - (lightLevels[r][c] / 15);
+            }
+
             world.appendChild(div);
-            mapData[r][c] = type;
             blockDivs[r][c] = div;
+        }
+
+        function generateFancyTree(baseR, baseC) {
+            let height = 4 + Math.floor(Math.random() * 4);
+            for (let i = 0; i < height; i++) createBlock(baseR - i, baseC, TYPES.WOOD);
+            let leafStart = baseR - height + 1; 
+            let leafEnd = baseR - height - 2;   
+            for (let r = leafStart; r >= leafEnd; r--) {
+                let width = (r === leafStart ? 2 : (r === leafStart - 1 ? 3 : (r === leafStart - 2 ? 2 : 1)));
+                for (let c = baseC - width; c <= baseC + width; c++) {
+                    if (Math.random() > 0.8 && (c === baseC - width || c === baseC + width)) continue;
+                    if (mapData[r] && mapData[r][c] === TYPES.SKY) createBlock(r, c, TYPES.LEAVES);
+                }
+            }
+            if (mapData[baseR - height][baseC] === TYPES.SKY) createBlock(baseR - height, baseC, TYPES.LEAVES);
         }
 
         function createParticles(r, c, type) {
             for(let i=0; i<4; i++) {
                 const p = document.createElement('div');
                 p.className = 'particle ' + CLASSES[type];
-                let offsetX = (Math.random() * 15) + 5; 
-                let offsetY = (Math.random() * 15) + 5;
-                p.style.left = ((c * B_SIZE) + offsetX) + "px";
-                p.style.top = ((r * B_SIZE) + offsetY) + "px";
-                p.style.borderRadius = (Math.random() * 5) + "px";
+                p.style.left = ((c * B_SIZE) + 10) + "px";
+                p.style.top = ((r * B_SIZE) + 10) + "px";
                 world.appendChild(p);
-
                 requestAnimationFrame(() => {
-                    let tx = (Math.random() - 0.5) * 60; 
-                    let ty = (Math.random() - 0.5) * 60; 
-                    let rot = (Math.random() - 0.5) * 360; 
-                    p.style.transform = `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(0)`;
+                    p.style.transform = `translate(${(Math.random()-0.5)*60}px, ${(Math.random()-0.5)*60}px) scale(0)`;
                     p.style.opacity = "0";
                 });
                 setTimeout(() => p.remove(), 400);
             }
         }
 
+        function carveCaves() {
+            let numCaves = 45; 
+            for(let i=0; i<numCaves; i++) {
+                let r = Math.floor(Math.random() * (ROWS - 30)) + 30; 
+                let c = Math.floor(Math.random() * COLS);
+                let life = 60 + Math.random() * 100;
+                
+                while(life > 0) {
+                    life--;
+                    let radius = 1 + Math.random() * 2;
+                    for(let dr = -radius; dr <= radius; dr++) {
+                        for(let dc = -radius; dc <= radius; dc++) {
+                            if (dr*dr + dc*dc <= radius*radius) {
+                                let nr = Math.round(r + dr);
+                                let nc = Math.round(c + dc);
+                                if (nc >= 0 && nc < COLS && nr < ROWS && nr > surfaceHeights[nc] + 4) {
+                                    if(mapData[nr][nc] !== TYPES.SKY && mapData[nr][nc] !== TYPES.CAVE) {
+                                        createBlock(nr, nc, TYPES.CAVE);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    r += (Math.random() - 0.5) * 2;
+                    c += (Math.random() - 0.5) * 3;
+                    if (r < 0) r = 0; if (r >= ROWS) r = ROWS-1;
+                    if (c < 0) c = 0; if (c >= COLS) c = COLS-1;
+                }
+            }
+        }
+
         function initWorld() {
-            world.style.width = (COLS * B_SIZE) + "px";
-            world.style.height = (ROWS * B_SIZE) + "px";
-            let currentHeight = 25; 
-            let heights = [];
+            const existingBlocks = world.querySelectorAll('.block'); existingBlocks.forEach(b => b.remove());
+            world.style.width = (COLS * B_SIZE) + "px"; world.style.height = (ROWS * B_SIZE) + "px";
+            
+            let currentHeight = 25;
+            surfaceHeights = [];
 
             for (let c = 0; c < COLS; c++) {
                 let biome = c < 80 ? "plains" : (c < 180 ? "mountains" : "desert");
-                if (biome === "plains") {
-                    if (Math.random() < 0.2) currentHeight += (Math.random() > 0.5 ? 1 : -1);
-                    currentHeight = Math.max(22, Math.min(28, currentHeight));
-                } else if (biome === "mountains") {
-                    if (Math.random() < 0.7) currentHeight += (Math.random() > 0.4 ? -1 : 1);
-                    currentHeight = Math.max(5, Math.min(25, currentHeight));
-                } else if (biome === "desert") {
-                    if (Math.random() < 0.3) currentHeight += (Math.random() > 0.5 ? 1 : -1);
-                    currentHeight = Math.max(20, Math.min(26, currentHeight));
-                }
-                heights[c] = Math.floor(currentHeight);
+                if (biome === "plains") { if (Math.random() < 0.2) currentHeight += (Math.random() > 0.5 ? 1 : -1); currentHeight = Math.max(22, Math.min(28, currentHeight)); }
+                else if (biome === "mountains") { if (Math.random() < 0.7) currentHeight += (Math.random() > 0.4 ? -1 : 1); currentHeight = Math.max(5, Math.min(25, currentHeight)); }
+                else if (biome === "desert") { if (Math.random() < 0.3) currentHeight += (Math.random() > 0.5 ? 1 : -1); currentHeight = Math.max(20, Math.min(26, currentHeight)); }
+                surfaceHeights[c] = Math.floor(currentHeight);
             }
 
-            for (let r = 0; r < ROWS; r++) {
-                mapData[r] = []; blockDivs[r] = [];
-                for (let c = 0; c < COLS; c++) { mapData[r][c] = TYPES.SKY; blockDivs[r][c] = null; }
+            // Init Arrays
+            for (let r = 0; r < ROWS; r++) { 
+                mapData[r] = []; 
+                blockDivs[r] = []; 
+                lightLevels[r] = []; // Initialize light array
+                for (let c = 0; c < COLS; c++) { 
+                    mapData[r][c] = TYPES.SKY; 
+                    blockDivs[r][c] = null; 
+                    lightLevels[r][c] = 0;
+                } 
             }
 
             for (let c = 0; c < COLS; c++) {
-                let ground = heights[c];
+                let ground = surfaceHeights[c];
                 let biome = c < 80 ? "plains" : (c < 180 ? "mountains" : "desert");
                 if(c === 20) py = ground - 3; 
 
-                for (let r = ground; r < ROWS; r++) {
-                    let type = TYPES.STONE;
-                    if (r === ground) type = (biome === "desert") ? TYPES.SAND : (biome === "mountains" ? TYPES.STONE : TYPES.GRASS);
-                    else if (r < ground + 4) type = (biome === "desert") ? TYPES.SANDSTONE : (biome === "mountains" ? TYPES.STONE : TYPES.DIRT);
-                    else if (Math.random() < 0.05) type = TYPES.COAL;
-                    createBlock(r, c, type);
+                for (let r = 0; r < ROWS; r++) {
+                    if(r >= ground) {
+                        let type = TYPES.STONE;
+                        if (r === ground) type = (biome === "desert") ? TYPES.SAND : (biome === "mountains" ? TYPES.STONE : TYPES.GRASS);
+                        else if (r < ground + 4) type = (biome === "desert") ? TYPES.SANDSTONE : (biome === "mountains" ? TYPES.STONE : TYPES.DIRT);
+                        else if (Math.random() < 0.05) type = TYPES.COAL;
+                        else if (r > ground + 10 && Math.random() < 0.03) type = TYPES.IRON;
+                        else if (r > ground + 15 && Math.random() < 0.02) type = TYPES.GOLD;
+                        else if (r > ground + 20 && Math.random() < 0.01) type = TYPES.DIAMOND;
+                        mapData[r][c] = type;
+                    }
                 }
+                if (biome === "plains" && Math.random() < 0.1 && c > 5 && c < 75) generateFancyTree(ground - 1, c);
+                else if (biome === "desert" && Math.random() < 0.08 && c > 185) for (let i = 1; i <= (2+Math.random()*2); i++) createBlock(ground - i, c, TYPES.CACTUS);
+            }
 
-                if (biome === "plains" && Math.random() < 0.1 && c > 5) {
-                    let h = 3 + Math.floor(Math.random() * 2);
-                    for (let i = 1; i <= h; i++) createBlock(ground - i, c, TYPES.WOOD);
-                    for (let x = -1; x <= 1; x++) for (let y = -2; y <= 0; y++) createBlock(ground - h + y, c + x, TYPES.LEAVES);
-                } else if (biome === "desert" && Math.random() < 0.08 && c > 185) {
-                    let h = 2 + Math.floor(Math.random() * 2);
-                    for (let i = 1; i <= h; i++) createBlock(ground - i, c, TYPES.CACTUS);
+            carveCaves();
+            
+            // Calculate Lights BEFORE rendering
+            updateLighting();
+
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if(mapData[r][c] !== TYPES.SKY) createBlock(r, c, mapData[r][c]);
                 }
             }
             updateInvUI();
         }
 
         function updateInvUI() {
-            const grid = document.getElementById('inv-grid');
-            const hotbar = document.getElementById('hotbar');
-            
-            if (!hotbar) return;
-
-            grid.innerHTML = '';
-            hotbar.innerHTML = '';
-            
+            const grid = document.getElementById('inv-grid'), hotbar = document.getElementById('hotbar');
+            grid.innerHTML = ''; hotbar.innerHTML = '';
             let ownedItems = [];
-            for (let i = 1; i < CLASSES.length; i++) {
+            for (let i = 1; i < CLASSES.length-1; i++) { 
                 if (inventory[i] > 0) {
                     ownedItems.push(i);
                     const slot = document.createElement('div');
                     slot.className = `slot ${equipped === i ? 'active' : ''}`;
-                    slot.innerHTML = `<div class="block ${CLASSES[i]}" style="position:static; display:inline-block;"></div><div style="font-size:10px;">x${inventory[i]}</div>`;
+                    slot.innerHTML = `<div class="block ${CLASSES[i]}" style="position:static; display:inline-block; transform:scale(0.8);"></div><div style="font-size:10px;">x${inventory[i]}</div>`;
                     slot.onclick = () => setEquipped(i);
                     grid.appendChild(slot);
                 }
             }
-
             for (let i = 0; i < 9; i++) {
                 const hSlot = document.createElement('div');
                 const itemType = ownedItems[i];
-                const isActive = (itemType && equipped === itemType);
-                
-                hSlot.className = `hot-slot ${isActive ? 'active' : ''}`;
-                
-                const keyNum = document.createElement('div');
-                keyNum.className = 'hot-key';
-                keyNum.innerText = (i + 1);
-                hSlot.appendChild(keyNum);
-
+                hSlot.className = `hot-slot ${itemType && equipped === itemType ? 'active' : ''}`;
+                hSlot.innerHTML = `<div class="hot-key">${i + 1}</div>`;
                 if (itemType) {
-                    const icon = document.createElement('div');
-                    icon.className = `block ${CLASSES[itemType]}`;
-                    icon.style.position = 'static';
-                    icon.style.transform = 'scale(0.85)';
-                    hSlot.appendChild(icon);
-                    
-                    const amt = document.createElement('div');
-                    amt.className = 'hot-amount';
-                    amt.innerText = inventory[itemType];
-                    hSlot.appendChild(amt);
+                    hSlot.innerHTML += `<div class="block ${CLASSES[itemType]}" style="position:static; transform:scale(0.85);"></div><div class="hot-amount">${inventory[itemType]}</div>`;
                     hSlot.onclick = () => setEquipped(itemType);
-                } else {
-                    hSlot.style.opacity = "0.4";
-                }
-                
+                } else hSlot.style.opacity = "0.4";
                 hotbar.appendChild(hSlot);
             }
-            if (grid.innerHTML === '') grid.innerHTML = '<div style="color:#888;">Inventory Empty</div>';
         }
 
         function updateHandAppearance() {
             tool.className = '';
             if (inventory[equipped] > 0) {
                 tool.classList.add(CLASSES[equipped]);
-                tool.style.width = '12px'; tool.style.height = '12px';
-                tool.style.background = '';
-                tool.style.border = '1px solid rgba(0,0,0,0.3)';
+                tool.style.width = '12px'; tool.style.height = '12px'; tool.style.background = ''; tool.style.border = '1px solid rgba(0,0,0,0.3)';
             } else {
-                tool.style.background = '#5d4037';
-                tool.style.width = '18px'; tool.style.height = '6px';
-                tool.style.border = 'none';
+                tool.style.background = '#5d4037'; tool.style.width = '18px'; tool.style.height = '6px'; tool.style.border = 'none';
             }
         }
 
-        // --- CONTROLS ---
         window.addEventListener('keydown', e => {
-            const key = e.key.toLowerCase();
-            keys[key] = true;
-            
-            // KEYBOARD SHORTCUTS LOGIC
-            if (key === 'escape') {
-                if (invOpen) {
-                    toggleInv(); // Close inventory if open
-                } else {
-                    togglePause(); // Otherwise toggle pause
-                }
-            } else if (key === 'e' && !isPaused) {
-                toggleInv();
-            }
-            
+            const key = e.key.toLowerCase(); keys[key] = true;
+            if (key === 'escape') invOpen ? toggleInv() : togglePause();
+            else if (key === 'e' && !isPaused) toggleInv();
             if (e.key >= '1' && e.key <= '9') {
-                const owned = [];
-                for(let i=1; i<CLASSES.length; i++) if(inventory[i] > 0) owned.push(i);
-                const idx = parseInt(e.key) - 1;
-                if(owned[idx] !== undefined) setEquipped(owned[idx]);
+                const owned = []; for(let i=1; i<CLASSES.length-1; i++) if(inventory[i] > 0) owned.push(i);
+                if(owned[e.key - 1]) setEquipped(owned[e.key - 1]);
             }
         });
-
         window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
         viewport.addEventListener('mousedown', e => {
             if (invOpen || isPaused || isBreaking) return; 
-
-            tool.classList.add('swing');
-            setTimeout(() => tool.classList.remove('swing'), 150);
-
+            tool.classList.add('swing'); setTimeout(() => tool.classList.remove('swing'), 150);
             const rect = world.getBoundingClientRect();
             const mx = Math.floor(((e.clientX - rect.left) / ZOOM) / B_SIZE);
             const my = Math.floor(((e.clientY - rect.top) / ZOOM) / B_SIZE);
-
             if (mx < 0 || mx >= COLS || my < 0 || my >= ROWS) return;
-            const dist = Math.sqrt(Math.pow(mx - px, 2) + Math.pow(my - py, 2));
-            if (dist > 6) return;
+            if (Math.sqrt(Math.pow(mx - px, 2) + Math.pow(my - py, 2)) > 6) return;
 
             if (e.shiftKey) {
-                if (mapData[my][mx] === TYPES.SKY && inventory[equipped] > 0) {
-                    createBlock(my, mx, equipped);
-                    inventory[equipped]--;
-                    updateInvUI();
-                    updateHandAppearance();
+                if (mapData[my][mx] === TYPES.SKY || mapData[my][mx] === TYPES.CAVE) {
+                    if(inventory[equipped] > 0) {
+                        createBlock(my, mx, equipped); inventory[equipped]--; 
+                        
+                        // Placing a solid block blocks light, so we should update lights
+                        // Optimization: For this demo, we'll just update lights immediately
+                        updateLighting();
+                        
+                        updateInvUI(); updateHandAppearance();
+                    }
                 }
             } else {
-                if (mapData[my][mx] !== TYPES.SKY) {
-                    const targetBlock = blockDivs[my][mx];
-                    if(targetBlock) {
-                        isBreaking = true;
-                        targetBlock.classList.add('shaking');
+                if (mapData[my][mx] !== TYPES.SKY && mapData[my][mx] !== TYPES.CAVE) {
+                    const target = blockDivs[my][mx];
+                    if(target) {
+                        isBreaking = true; target.classList.add('shaking');
                         setTimeout(() => {
-                            inventory[mapData[my][mx]]++;
-                            createParticles(my, mx, mapData[my][mx]);
-                            targetBlock.remove();
-                            mapData[my][mx] = TYPES.SKY;
-                            updateInvUI();
-                            updateHandAppearance();
-                            isBreaking = false;
+                            let dropped = mapData[my][mx];
+                            inventory[dropped]++; 
+                            createParticles(my, mx, dropped);
+                            
+                            let newType = (my > surfaceHeights[mx]) ? TYPES.CAVE : TYPES.SKY;
+                            createBlock(my, mx, newType); 
+                            
+                            // Breaking a block might let light in
+                            updateLighting();
+
+                            updateInvUI(); updateHandAppearance(); isBreaking = false;
                         }, 300);
                     }
                 }
             }
         });
 
-        // --- GAME LOOP ---
         function gameLoop() {
-            // PAUSE CHECK: Do not run logic if paused or inventory is open
             if (!invOpen && !isPaused) {
                 gameTime += 0.002;
                 let dayFactor = Math.sin(gameTime);
-                let sunX = (Math.cos(gameTime) * 400) + 400;
-                let sunY = (Math.sin(gameTime) * 250) + 300;
-                let moonX = (Math.cos(gameTime + Math.PI) * 400) + 400;
-                let moonY = (Math.sin(gameTime + Math.PI) * 250) + 300;
-
-                sun.style.left = sunX + 'px'; sun.style.top = sunY + 'px';
-                moon.style.left = moonX + 'px'; moon.style.top = moonY + 'px';
-
-                let skyR = Math.max(20, 135 * dayFactor + 20);
-                let skyG = Math.max(20, 206 * dayFactor + 20);
-                let skyB = Math.max(40, 235 * dayFactor + 40);
+                sun.style.left = ((Math.cos(gameTime) * 400) + 400) + 'px'; sun.style.top = ((Math.sin(gameTime) * 250) + 300) + 'px';
+                moon.style.left = ((Math.cos(gameTime + Math.PI) * 400) + 400) + 'px'; moon.style.top = ((Math.sin(gameTime + Math.PI) * 250) + 300) + 'px';
+                
+                let skyR = Math.max(20, 135 * dayFactor + 20), skyG = Math.max(20, 206 * dayFactor + 20), skyB = Math.max(40, 235 * dayFactor + 40);
                 viewport.style.backgroundColor = `rgb(${skyR}, ${skyG}, ${skyB})`;
 
-                clouds.forEach(c => {
-                    c.x += c.speed;
-                    if(c.x > 850) c.x = -c.w;
-                    c.el.style.left = c.x + 'px';
-                    c.el.style.top = c.y + 'px';
-                });
+                clouds.forEach(c => { c.x += c.speed; if(c.x > 850) c.x = -c.w; c.el.style.left = c.x + 'px'; c.el.style.top = c.y + 'px'; });
 
-                // MOVEMENT
-                const currentSpeed = keys['shift'] ? 0.28 : 0.15;
-                vx = 0;
-                if (keys['a'] || keys['arrowleft']) vx = -currentSpeed;
-                if (keys['d'] || keys['arrowright']) vx = currentSpeed;
+                const spd = keys['shift'] ? 0.28 : 0.15;
+                vx = 0; if (keys['a'] || keys['arrowleft']) vx = -spd; if (keys['d'] || keys['arrowright']) vx = spd;
 
-                // COLLISIONS
                 let actualMoveX = 0;
-                if (!isSolid(px + vx, py + 0.1) && !isSolid(px + vx, py + 1.7)) {
-                    px += vx;
-                    actualMoveX = vx; 
-                }
+                if (!isSolid(px + vx, py + 0.1) && !isSolid(px + vx, py + 1.7)) { px += vx; actualMoveX = vx; }
 
-                // ANIMATION
-                let wobbleRot = 0;
                 if (vx !== 0 && Math.abs(actualMoveX) > 0.001) {
                     facingDir = vx > 0 ? 1 : -1;
-                    if (grounded) {
-                        walkCycle += 0.15; 
-                        let rawSine = Math.sin(walkCycle);
-                        if (rawSine > 0.4) wobbleRot = 12; 
-                        else if (rawSine < -0.4) wobbleRot = -12;
-                        else wobbleRot = 0;
-                    } else {
-                        walkCycle = 0;
-                    }
-                } else {
-                    walkCycle = 0;
-                    if(vx !== 0) facingDir = vx > 0 ? 1 : -1; 
-                }
+                    if (grounded) { walkCycle += 0.15; player.style.transform = `scaleX(${facingDir}) rotate(${Math.sin(walkCycle) > 0.4 ? 12 : (Math.sin(walkCycle) < -0.4 ? -12 : 0)}deg)`; }
+                } else { walkCycle = 0; player.style.transform = `scaleX(${facingDir})`; }
 
-                player.style.transform = `scaleX(${facingDir}) rotate(${wobbleRot}deg)`;
-
-                // PHYSICS
                 vy += 0.04; 
                 if ((keys['w'] || keys[' '] || keys['arrowup']) && grounded) { vy = -0.55; grounded = false; }
-                if (isSolid(px, py + vy + 1.8) || isSolid(px, py + vy + 0.1)) {
-                    if (vy > 0) grounded = true;
-                    vy = 0;
-                } else { py += vy; grounded = false; }
+                if (isSolid(px, py + vy + 1.8) || isSolid(px, py + vy + 0.1)) { if (vy > 0) grounded = true; vy = 0; } 
+                else { py += vy; grounded = false; }
 
-                player.style.left = (px * B_SIZE) + "px";
-                player.style.top = (py * B_SIZE) + "px";
+                player.style.left = (px * B_SIZE) + "px"; player.style.top = (py * B_SIZE) + "px";
+                
+                // --- SMOOTH CAMERA LOGIC ---
+                // 1. Calculate the "Target" camera position (Centered on player)
+                // 425 is half viewport width, 300 is half viewport height
+                const targetCamX = -(px * B_SIZE * ZOOM) + 425;
+                const targetCamY = -(py * B_SIZE * ZOOM) + 300;
+                
+                // 2. Linear Interpolation (Lerp)
+                // Move current pos 10% of the way to target pos every frame
+                // This creates the "drag" effect
+                smoothCam.x += (targetCamX - smoothCam.x) * 0.1; 
+                smoothCam.y += (targetCamY - smoothCam.y) * 0.1; 
 
-                const camX = -(px * B_SIZE * ZOOM) + 425;
-                const camY = -(py * B_SIZE * ZOOM) + 300;
-                
-                const limitX = -(COLS * B_SIZE * ZOOM - 850);
-                const limitY = -(ROWS * B_SIZE * ZOOM - 600);
-                
-                world.style.transform = `translate(${Math.min(0, Math.max(camX, limitX))}px, ${Math.min(0, Math.max(camY, limitY))}px) scale(${ZOOM})`;
+                // 3. Clamp to world bounds so we don't see white space outside world
+                // (Optional: if you want the cam to stop at edges)
+                const clampedX = Math.min(0, Math.max(smoothCam.x, -(COLS*B_SIZE*ZOOM-850)));
+                const clampedY = Math.min(0, Math.max(smoothCam.y, -(ROWS*B_SIZE*ZOOM-600)));
+
+                world.style.transform = `translate(${clampedX}px, ${clampedY}px) scale(${ZOOM})`;
                 
                 debug.innerText = `Time: ${dayFactor > 0 ? 'Day' : 'Night'} | Biome: ${px < 80 ? 'Plains' : (px < 180 ? 'Mountains' : 'Desert')}`;
             }
@@ -584,8 +564,7 @@
 
         function isSolid(x, y) {
             const r = Math.floor(y), c = Math.round(x);
-            if(r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
-            return (mapData[r][c] !== TYPES.SKY);
+            return (r >= 0 && r < ROWS && c >= 0 && c < COLS && mapData[r][c] !== TYPES.SKY && mapData[r][c] !== TYPES.CAVE);
         }
     </script>
 </body>
