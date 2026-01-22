@@ -18,45 +18,94 @@
         #start-screen {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
-            background-color: #1a1a1a;
-            z-index: 9999;
+            z-index: 99999;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
+            background-color: #2e211b;
+            background-image: 
+                linear-gradient(45deg, #3d2e26 25%, transparent 25%, transparent 75%, #3d2e26 75%, #3d2e26),
+                linear-gradient(45deg, #3d2e26 25%, transparent 25%, transparent 75%, #3d2e26 75%, #3d2e26);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.8);
         }
-        
-        #start-btn {
-            padding: 25px 70px; font-size: 32px;
-            background: #388e3c; color: white;
-            border: 5px solid #fff; cursor: pointer;
-            font-weight: bold; font-family: monospace;
-        }
-        #start-btn:hover { background: #4caf50; }
 
-        /* --- VIEWPORT & SKY --- */
-        #viewport {
+        .logo-container {
             position: relative;
-            width: 850px; height: 600px;
-            margin: 20px auto;
-            background-color: #87CEEB;
-            border: 6px solid #333;
-            overflow: hidden;
-            display: none; 
+            margin-bottom: 60px;
+            animation: floatLogo 3s ease-in-out infinite;
         }
 
+        h1 {
+            font-family: 'Courier New', monospace;
+            font-size: 60px; 
+            color: #dcdcdc; 
+            margin: 0;
+            letter-spacing: -2px;
+            text-shadow: 4px 4px 0 #3f3f3f, -1px -1px 0 #3f3f3f, 1px -1px 0 #3f3f3f, -1px 1px 0 #3f3f3f, 1px 1px 0 #3f3f3f;
+            font-weight: 900;
+        }
+
+        .splash-text {
+            position: absolute; bottom: -20px; right: -60px;
+            color: #ffff55; font-size: 24px; font-weight: bold;
+            transform: rotate(-20deg);
+            text-shadow: 2px 2px 0 #3f3f3f;
+            animation: pulseSplash 0.5s alternate infinite ease-in;
+            white-space: nowrap;
+        }
+
+        #start-btn {
+            position: relative; padding: 15px 80px; font-size: 24px;
+            color: #fff; background-color: #7c7c7c; border: none;
+            cursor: pointer; font-family: sans-serif;
+            text-shadow: 2px 2px 0 #333;
+            box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #333, 2px 2px 0 #000;
+            border: 2px solid #000; transition: background 0.1s;
+        }
+        #start-btn:hover { background-color: #8e8e8e; }
+        #start-btn:active { background-color: #555; box-shadow: inset 2px 2px 0 #333, inset -2px -2px 0 #aaa; }
+
+        @keyframes floatLogo { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        @keyframes pulseSplash { 0% { transform: rotate(-20deg) scale(1); } 100% { transform: rotate(-20deg) scale(1.1); } }
+
+        /* --- PAUSE MENU --- */
+        #pause-menu {
+            display: none;
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 300px;
+            background: #2c2c2c;
+            border: 4px solid #fff;
+            padding: 20px;
+            z-index: 20000;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        .pause-btn {
+            display: block; width: 100%; margin: 10px 0; padding: 10px;
+            background: #555; color: white; border: 2px solid #111;
+            cursor: pointer; font-family: monospace; font-size: 16px;
+        }
+        .pause-btn:hover { background: #666; border-color: #fff; }
+
+        /* --- VIEWPORT & WORLD --- */
+        #viewport {
+            position: relative; width: 850px; height: 600px; margin: 20px auto;
+            background-color: #87CEEB; border: 6px solid #333; overflow: hidden;
+            display: none; z-index: 1;
+        }
         #sun { position: absolute; width: 60px; height: 60px; background: #ffeb3b; border-radius: 50%; box-shadow: 0 0 40px #fff176; z-index: 1; }
         #moon { position: absolute; width: 50px; height: 50px; background: #eceff1; border-radius: 50%; box-shadow: 0 0 20px #fff; z-index: 1; }
-        
         .cloud { position: absolute; background: white; border-radius: 10px; opacity: 0.8; z-index: 2; }
-
-        #world { 
-            position: absolute; 
-            top: 0; left: 0; 
-            will-change: transform; 
-            z-index: 10; 
-            transform-origin: 0 0; 
-        }
-
+        #world { position: absolute; top: 0; left: 0; will-change: transform; z-index: 10; transform-origin: 0 0; }
         .block { position: absolute; width: 25px; height: 25px; }
+
+        /* --- PLAYER & FX --- */
+        .shaking { animation: shake 0.1s linear infinite; }
+        @keyframes shake { 0% { transform: translate(0, 0); } 25% { transform: translate(-2px, 1px); } 50% { transform: translate(2px, -1px); } 75% { transform: translate(-2px, -1px); } 100% { transform: translate(0, 0); } }
+        
+        .particle { position: absolute; width: 8px; height: 8px; z-index: 15; pointer-events: none; opacity: 1; transition: transform 0.4s ease-out, opacity 0.4s ease-in; }
 
         /* Textures */
         .grass { background: #4caf50; border-top: 4px solid #8bc34a; }
@@ -73,37 +122,49 @@
         .diamond { background: #00e5ff; }
         .sky { background: transparent; }
 
-        /* --- PLAYER --- */
-        #player { position: absolute; width: 22px; height: 44px; z-index: 100; }
+        #player { position: absolute; width: 22px; height: 44px; z-index: 100; transform-origin: bottom center; transition: transform 0.1s steps(3); }
         #p-head { width: 22px; height: 22px; background: #ffdbac; border: 2px solid #000; }
         #p-body { width: 18px; height: 22px; background: #0288d1; border: 2px solid #000; margin-left: 2px; border-top: none; }
-        #tool { position: absolute; top: 18px; right: -10px; width: 18px; height: 6px; background: #5d4037; transform-origin: left; transform: rotate(-40deg); }
+        
+        #tool { position: absolute; top: 18px; right: -8px; transform-origin: left; transform: rotate(-40deg); transition: background 0.1s; }
         .swing { animation: swing 0.15s ease-in-out; }
         @keyframes swing { 0% { transform: rotate(-40deg); } 50% { transform: rotate(50deg); } 100% { transform: rotate(-40deg); } }
 
         #selector { position: absolute; width: 25px; height: 25px; border: 2px solid #fff; z-index: 90; pointer-events: none; }
 
-        /* --- INVENTORY --- */
-        #inv-screen {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 550px; background: #2c2c2c; border: 4px solid #fff; padding: 20px; z-index: 1000;
-        }
+        /* --- UI ELEMENTS --- */
+        #inv-screen { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 550px; background: #2c2c2c; border: 4px solid #fff; padding: 20px; z-index: 5000; }
         .inv-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
         .slot { background: #444; padding: 5px; border: 2px solid #111; cursor: pointer; text-align: center; }
         .slot.active { border-color: #ffee58; background: #555; }
 
-        #debug { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 8px; font-size: 12px; z-index: 1001; }
+        #hotbar { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; background: rgba(30, 30, 30, 0.9); padding: 6px; border: 3px solid #fff; border-radius: 6px; z-index: 10000; box-shadow: 0 0 10px rgba(0,0,0,0.8); }
+        .hot-slot { width: 36px; height: 36px; background: #555; border: 2px solid #222; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
+        .hot-slot.active { border-color: #ffee58; background: #777; box-shadow: inset 0 0 0 1px #fff; transform: scale(1.05); }
+        .hot-key { position: absolute; top: 1px; left: 2px; font-size: 8px; color: #fff; font-family: monospace; z-index: 2; }
+        .hot-amount { position: absolute; bottom: 0; right: 2px; font-size: 10px; font-weight: bold; color: white; text-shadow: 1px 1px 0 #000; z-index: 2; }
+
+        #debug { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 8px; font-size: 12px; z-index: 6000; }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
-        <h1 style="font-size: 50px; color: #4caf50; margin: 0;">MINECRAFT: CELESTIAL</h1>
-        <p style="color: #888; margin-bottom: 30px;">Day & Night Cycle • Dynamic Clouds</p>
-        <button id="start-btn">START WORLD</button>
+        <div class="logo-container">
+            <h1>MINECRAFT<br>CELESTIAL</h1>
+            <div class="splash-text">Now with Wobble!</div>
+        </div>
+        <button id="start-btn">Start Game</button>
     </div>
 
-    <div id="debug">Ready...</div>
+    <div id="pause-menu">
+        <h2 style="margin-top:0;">GAME PAUSED</h2>
+        <button class="pause-btn" id="resume-btn">Continue Game</button>
+        <button class="pause-btn" id="exit-btn">Exit to Menu</button>
+    </div>
+
+    <div id="debug">Waiting for start...</div>
+    <div id="hotbar"></div>
 
     <div id="viewport">
         <div id="sun"></div>
@@ -135,6 +196,7 @@
         
         let equipped = 1;
         let invOpen = false;
+        let isPaused = false; // New Pause State
         let mapData = [];
         let blockDivs = [];
         let px = 20, py = 5; 
@@ -142,6 +204,9 @@
         let keys = {};
         let gameTime = 0;
         const clouds = [];
+        let walkCycle = 0;
+        let facingDir = 1; 
+        let isBreaking = false; 
 
         // --- DOM ELEMENTS ---
         const world = document.getElementById('world');
@@ -154,26 +219,46 @@
         const startBtn = document.getElementById('start-btn');
         const invScreen = document.getElementById('inv-screen');
         const closeInvBtn = document.getElementById('close-inv-btn');
+        
+        // Pause Menu Elements
+        const pauseMenu = document.getElementById('pause-menu');
+        const resumeBtn = document.getElementById('resume-btn');
+        const exitBtn = document.getElementById('exit-btn');
 
         // --- EVENT LISTENERS ---
         startBtn.addEventListener('click', () => {
             document.getElementById('start-screen').style.display = 'none';
             viewport.style.display = 'block';
+            document.getElementById('hotbar').style.display = 'flex';
             initWorld();
             initClouds();
+            updateHandAppearance();
             requestAnimationFrame(gameLoop);
         });
 
         closeInvBtn.addEventListener('click', toggleInv);
 
+        // Pause Menu Buttons
+        resumeBtn.addEventListener('click', togglePause);
+        exitBtn.addEventListener('click', () => {
+            location.reload(); // Simple refresh to go back to menu
+        });
+
         function toggleInv() {
+            if (isPaused) return; // Cannot open inv while paused
             invOpen = !invOpen;
             invScreen.style.display = invOpen ? 'block' : 'none';
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            pauseMenu.style.display = isPaused ? 'block' : 'none';
         }
 
         function setEquipped(id) {
             equipped = id;
             updateInvUI();
+            updateHandAppearance();
         }
 
         // --- WORLD GENERATION ---
@@ -204,6 +289,28 @@
             world.appendChild(div);
             mapData[r][c] = type;
             blockDivs[r][c] = div;
+        }
+
+        function createParticles(r, c, type) {
+            for(let i=0; i<4; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle ' + CLASSES[type];
+                let offsetX = (Math.random() * 15) + 5; 
+                let offsetY = (Math.random() * 15) + 5;
+                p.style.left = ((c * B_SIZE) + offsetX) + "px";
+                p.style.top = ((r * B_SIZE) + offsetY) + "px";
+                p.style.borderRadius = (Math.random() * 5) + "px";
+                world.appendChild(p);
+
+                requestAnimationFrame(() => {
+                    let tx = (Math.random() - 0.5) * 60; 
+                    let ty = (Math.random() - 0.5) * 60; 
+                    let rot = (Math.random() - 0.5) * 360; 
+                    p.style.transform = `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(0)`;
+                    p.style.opacity = "0";
+                });
+                setTimeout(() => p.remove(), 400);
+            }
         }
 
         function initWorld() {
@@ -259,23 +366,101 @@
 
         function updateInvUI() {
             const grid = document.getElementById('inv-grid');
+            const hotbar = document.getElementById('hotbar');
+            
+            if (!hotbar) return;
+
             grid.innerHTML = '';
+            hotbar.innerHTML = '';
+            
+            let ownedItems = [];
             for (let i = 1; i < CLASSES.length; i++) {
-                const slot = document.createElement('div');
-                slot.className = `slot ${equipped === i ? 'active' : ''}`;
-                slot.innerHTML = `<div class="block ${CLASSES[i]}" style="position:static; display:inline-block;"></div><div style="font-size:10px;">x${inventory[i]}</div>`;
-                slot.onclick = () => setEquipped(i);
-                grid.appendChild(slot);
+                if (inventory[i] > 0) {
+                    ownedItems.push(i);
+                    const slot = document.createElement('div');
+                    slot.className = `slot ${equipped === i ? 'active' : ''}`;
+                    slot.innerHTML = `<div class="block ${CLASSES[i]}" style="position:static; display:inline-block;"></div><div style="font-size:10px;">x${inventory[i]}</div>`;
+                    slot.onclick = () => setEquipped(i);
+                    grid.appendChild(slot);
+                }
+            }
+
+            for (let i = 0; i < 9; i++) {
+                const hSlot = document.createElement('div');
+                const itemType = ownedItems[i];
+                const isActive = (itemType && equipped === itemType);
+                
+                hSlot.className = `hot-slot ${isActive ? 'active' : ''}`;
+                
+                const keyNum = document.createElement('div');
+                keyNum.className = 'hot-key';
+                keyNum.innerText = (i + 1);
+                hSlot.appendChild(keyNum);
+
+                if (itemType) {
+                    const icon = document.createElement('div');
+                    icon.className = `block ${CLASSES[itemType]}`;
+                    icon.style.position = 'static';
+                    icon.style.transform = 'scale(0.85)';
+                    hSlot.appendChild(icon);
+                    
+                    const amt = document.createElement('div');
+                    amt.className = 'hot-amount';
+                    amt.innerText = inventory[itemType];
+                    hSlot.appendChild(amt);
+                    hSlot.onclick = () => setEquipped(itemType);
+                } else {
+                    hSlot.style.opacity = "0.4";
+                }
+                
+                hotbar.appendChild(hSlot);
+            }
+            if (grid.innerHTML === '') grid.innerHTML = '<div style="color:#888;">Inventory Empty</div>';
+        }
+
+        function updateHandAppearance() {
+            tool.className = '';
+            if (inventory[equipped] > 0) {
+                tool.classList.add(CLASSES[equipped]);
+                tool.style.width = '12px'; tool.style.height = '12px';
+                tool.style.background = '';
+                tool.style.border = '1px solid rgba(0,0,0,0.3)';
+            } else {
+                tool.style.background = '#5d4037';
+                tool.style.width = '18px'; tool.style.height = '6px';
+                tool.style.border = 'none';
             }
         }
 
         // --- CONTROLS ---
-        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keydown', e => {
+            const key = e.key.toLowerCase();
+            keys[key] = true;
+            
+            // KEYBOARD SHORTCUTS LOGIC
+            if (key === 'escape') {
+                if (invOpen) {
+                    toggleInv(); // Close inventory if open
+                } else {
+                    togglePause(); // Otherwise toggle pause
+                }
+            } else if (key === 'e' && !isPaused) {
+                toggleInv();
+            }
+            
+            if (e.key >= '1' && e.key <= '9') {
+                const owned = [];
+                for(let i=1; i<CLASSES.length; i++) if(inventory[i] > 0) owned.push(i);
+                const idx = parseInt(e.key) - 1;
+                if(owned[idx] !== undefined) setEquipped(owned[idx]);
+            }
+        });
+
         window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-        window.addEventListener('keydown', e => { if(e.key === 'e') toggleInv(); });
 
         viewport.addEventListener('mousedown', e => {
-            if (invOpen) return;
+            if (invOpen || isPaused || isBreaking) return; 
+
             tool.classList.add('swing');
             setTimeout(() => tool.classList.remove('swing'), 150);
 
@@ -288,20 +473,36 @@
             if (dist > 6) return;
 
             if (e.shiftKey) {
-                if (mapData[my][mx] === TYPES.SKY) createBlock(my, mx, equipped);
+                if (mapData[my][mx] === TYPES.SKY && inventory[equipped] > 0) {
+                    createBlock(my, mx, equipped);
+                    inventory[equipped]--;
+                    updateInvUI();
+                    updateHandAppearance();
+                }
             } else {
                 if (mapData[my][mx] !== TYPES.SKY) {
-                    inventory[mapData[my][mx]]++;
-                    if(blockDivs[my][mx]) blockDivs[my][mx].remove();
-                    mapData[my][mx] = TYPES.SKY;
-                    updateInvUI();
+                    const targetBlock = blockDivs[my][mx];
+                    if(targetBlock) {
+                        isBreaking = true;
+                        targetBlock.classList.add('shaking');
+                        setTimeout(() => {
+                            inventory[mapData[my][mx]]++;
+                            createParticles(my, mx, mapData[my][mx]);
+                            targetBlock.remove();
+                            mapData[my][mx] = TYPES.SKY;
+                            updateInvUI();
+                            updateHandAppearance();
+                            isBreaking = false;
+                        }, 300);
+                    }
                 }
             }
         });
 
         // --- GAME LOOP ---
         function gameLoop() {
-            if (!invOpen) {
+            // PAUSE CHECK: Do not run logic if paused or inventory is open
+            if (!invOpen && !isPaused) {
                 gameTime += 0.002;
                 let dayFactor = Math.sin(gameTime);
                 let sunX = (Math.cos(gameTime) * 400) + 400;
@@ -324,13 +525,40 @@
                     c.el.style.top = c.y + 'px';
                 });
 
+                // MOVEMENT
                 const currentSpeed = keys['shift'] ? 0.28 : 0.15;
                 vx = 0;
                 if (keys['a'] || keys['arrowleft']) vx = -currentSpeed;
                 if (keys['d'] || keys['arrowright']) vx = currentSpeed;
-                if (vx !== 0) player.style.transform = `scaleX(${vx > 0 ? 1 : -1})`;
-                if (!isSolid(px + vx, py + 0.1) && !isSolid(px + vx, py + 1.7)) px += vx;
 
+                // COLLISIONS
+                let actualMoveX = 0;
+                if (!isSolid(px + vx, py + 0.1) && !isSolid(px + vx, py + 1.7)) {
+                    px += vx;
+                    actualMoveX = vx; 
+                }
+
+                // ANIMATION
+                let wobbleRot = 0;
+                if (vx !== 0 && Math.abs(actualMoveX) > 0.001) {
+                    facingDir = vx > 0 ? 1 : -1;
+                    if (grounded) {
+                        walkCycle += 0.15; 
+                        let rawSine = Math.sin(walkCycle);
+                        if (rawSine > 0.4) wobbleRot = 12; 
+                        else if (rawSine < -0.4) wobbleRot = -12;
+                        else wobbleRot = 0;
+                    } else {
+                        walkCycle = 0;
+                    }
+                } else {
+                    walkCycle = 0;
+                    if(vx !== 0) facingDir = vx > 0 ? 1 : -1; 
+                }
+
+                player.style.transform = `scaleX(${facingDir}) rotate(${wobbleRot}deg)`;
+
+                // PHYSICS
                 vy += 0.04; 
                 if ((keys['w'] || keys[' '] || keys['arrowup']) && grounded) { vy = -0.55; grounded = false; }
                 if (isSolid(px, py + vy + 1.8) || isSolid(px, py + vy + 0.1)) {
