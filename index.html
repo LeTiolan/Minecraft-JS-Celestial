@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Minecraft JS: Lighting & Smooth Cam</title>
+    <title>Minecraft JS: Celestial Update</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -15,7 +15,7 @@
         }
 
         /* --- START SCREEN --- */
-        #start-screen {
+        #start-screen, #world-screen {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 99999;
@@ -29,14 +29,27 @@
             background-position: 0 0, 20px 20px;
         }
 
+        #world-screen { display: none; z-index: 99998; }
+
         .logo-container { margin-bottom: 50px; animation: floatLogo 3s ease-in-out infinite; position: relative; }
         h1 { font-family: 'Courier New', monospace; font-size: 60px; color: #dcdcdc; margin: 0; text-shadow: 4px 4px 0 #3f3f3f; }
         .splash-text { position: absolute; bottom: -20px; right: -60px; color: #ffff55; font-size: 24px; font-weight: bold; transform: rotate(-20deg); animation: pulseSplash 0.5s infinite alternate; }
-        #start-btn { padding: 15px 80px; font-size: 24px; color: #fff; background-color: #7c7c7c; border: 2px solid #000; cursor: pointer; box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #333; }
-        #start-btn:active { background: #555; box-shadow: inset 2px 2px 0 #333; }
+        
+        .main-btn { padding: 15px 80px; font-size: 24px; color: #fff; background-color: #7c7c7c; border: 2px solid #000; cursor: pointer; box-shadow: inset 2px 2px 0 #aaa, inset -2px -2px 0 #333; margin-top: 10px; }
+        .main-btn:active { background: #555; box-shadow: inset 2px 2px 0 #333; }
 
         @keyframes floatLogo { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes pulseSplash { 0% { transform: rotate(-20deg) scale(1); } 100% { transform: rotate(-20deg) scale(1.1); } }
+
+        /* --- WORLD SELECT --- */
+        .world-list { display: flex; flex-direction: column; gap: 15px; width: 500px; }
+        .world-slot { display: flex; justify-content: space-between; align-items: center; background: #222; border: 2px solid #fff; padding: 15px; cursor: pointer; transition: background 0.2s; }
+        .world-slot:hover { background: #333; }
+        .world-info { text-align: left; }
+        .world-name { font-size: 20px; font-weight: bold; color: #ddd; }
+        .world-details { font-size: 14px; color: #888; }
+        .del-btn { background: #b71c1c; color: white; border: 1px solid #fff; padding: 5px 10px; cursor: pointer; font-size: 12px; }
+        .del-btn:hover { background: #f44336; }
 
         /* --- UI --- */
         #pause-menu, #inv-screen { background: #2c2c2c; border: 4px solid #fff; padding: 20px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; z-index: 5000; text-align:center;}
@@ -55,8 +68,6 @@
 
         /* --- TEXTURES --- */
         .sky { background: transparent; } 
-        
-        /* CAVE AIR: Base color is Black. We control Opacity via JS based on light level. */
         .cave-air { background-color: #000; border: none; } 
 
         .grass { background: #4caf50; border-top: 4px solid #8bc34a; }
@@ -89,12 +100,13 @@
         .inv-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
         .slot { background: #444; padding: 5px; border: 2px solid #111; cursor: pointer; text-align: center; }
         .slot.active { border-color: #ffee58; background: #555; }
-        #hotbar { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; background: rgba(30,30,30,0.9); padding: 6px; border: 3px solid #fff; border-radius: 6px; z-index: 10000; }
+        #hotbar { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; background: rgba(30,30,30,0.9); padding: 6px; border: 3px solid #fff; border-radius: 6px; z-index: 10000; display: none; }
         .hot-slot { width: 36px; height: 36px; background: #555; border: 2px solid #222; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; }
         .hot-slot.active { border-color: #ffee58; background: #777; transform: scale(1.05); }
         .hot-key { position: absolute; top: 1px; left: 2px; font-size: 8px; color: #fff; font-family: monospace; }
         .hot-amount { position: absolute; bottom: 0; right: 2px; font-size: 10px; font-weight: bold; color: white; text-shadow: 1px 1px 0 #000; }
         #debug { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 8px; font-size: 12px; z-index: 6000; }
+        #save-notification { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #4caf50; color: white; padding: 10px 20px; border-radius: 5px; opacity: 0; transition: opacity 0.5s; z-index: 10001; }
     </style>
 </head>
 <body>
@@ -102,19 +114,28 @@
     <div id="start-screen">
         <div class="logo-container">
             <h1>MINECRAFT<br>CELESTIAL</h1>
-            <div class="splash-text">Smooth Cam + Light Rays!</div>
+            <div class="splash-text">Now with Saves!</div>
         </div>
-        <button id="start-btn">Start Game</button>
+        <button class="main-btn" id="play-btn">Play</button>
+    </div>
+
+    <div id="world-screen">
+        <h2 style="font-size: 40px; margin-bottom: 30px;">SELECT WORLD</h2>
+        <div class="world-list" id="world-list">
+            </div>
+        <button class="main-btn" id="back-to-menu" style="margin-top: 30px; font-size: 18px; padding: 10px 40px;">Back</button>
     </div>
 
     <div id="pause-menu">
         <h2>GAME PAUSED</h2>
         <button class="menu-btn" id="resume-btn">Continue</button>
-        <button class="menu-btn" id="exit-btn">Exit to Menu</button>
+        <button class="menu-btn" id="save-btn">Save Game</button>
+        <button class="menu-btn" id="exit-btn">Save & Exit</button>
     </div>
 
     <div id="debug">Waiting for start...</div>
     <div id="hotbar"></div>
+    <div id="save-notification">Game Saved!</div>
 
     <div id="viewport">
         <div id="sun"></div>
@@ -140,24 +161,26 @@
         const TYPES = { SKY:0, GRASS:1, DIRT:2, STONE:3, COAL:4, IRON:5, GOLD:6, DIAMOND:7, EMERALD:8, SAND:9, SANDSTONE:10, WOOD:11, LEAVES:12, CACTUS:13, CAVE:14 };
         const CLASSES = ["sky", "grass", "dirt", "stone", "coal", "iron", "gold", "diamond", "emerald", "sand", "sandstone", "wood", "leaves", "cactus", "cave-air"];
         
+        // Game State
         let inventory = {}; for(let i=1; i<CLASSES.length-1; i++) inventory[i] = 0; 
         let equipped = 1;
         let invOpen = false, isPaused = false;
+        let currentSlot = 1; // 1, 2, or 3
         
         // Map Data
         let mapData = []; 
         let blockDivs = [];
-        let lightLevels = []; // Stores 0-15 light value
+        let lightLevels = []; 
         let surfaceHeights = []; 
 
         // Physics & Cam
         let px = 20, py = 5, vx = 0, vy = 0, grounded = false;
-        // smoothCam stores the ACTUAL camera position for smoothing
         let smoothCam = { x: 0, y: 0 }; 
         
         let keys = {}, gameTime = 0, clouds = [];
         let walkCycle = 0, facingDir = 1, isBreaking = false; 
 
+        // DOM Elements
         const world = document.getElementById('world');
         const viewport = document.getElementById('viewport');
         const player = document.getElementById('player');
@@ -165,163 +188,224 @@
         const debug = document.getElementById('debug');
         const sun = document.getElementById('sun');
         const moon = document.getElementById('moon');
-        const startBtn = document.getElementById('start-btn');
         const invScreen = document.getElementById('inv-screen');
+        const startScreen = document.getElementById('start-screen');
+        const worldScreen = document.getElementById('world-screen');
+        const saveNotify = document.getElementById('save-notification');
 
-        startBtn.addEventListener('click', () => {
-            document.getElementById('start-screen').style.display = 'none';
-            viewport.style.display = 'block';
-            document.getElementById('hotbar').style.display = 'flex';
-            initWorld(); initClouds(); updateHandAppearance();
-            
-            // Set initial cam pos
-            smoothCam.x = -(px * B_SIZE * ZOOM) + 425;
-            smoothCam.y = -(py * B_SIZE * ZOOM) + 300;
-            
-            requestAnimationFrame(gameLoop);
+        // --- MENU NAVIGATION ---
+        document.getElementById('play-btn').addEventListener('click', () => {
+            startScreen.style.display = 'none';
+            worldScreen.style.display = 'flex';
+            renderWorldList();
+        });
+
+        document.getElementById('back-to-menu').addEventListener('click', () => {
+            worldScreen.style.display = 'none';
+            startScreen.style.display = 'flex';
         });
 
         document.getElementById('close-inv-btn').addEventListener('click', toggleInv);
         document.getElementById('resume-btn').addEventListener('click', togglePause);
-        document.getElementById('exit-btn').addEventListener('click', () => location.reload());
+        
+        document.getElementById('save-btn').addEventListener('click', () => {
+            saveGame();
+            togglePause();
+        });
+
+        document.getElementById('exit-btn').addEventListener('click', () => {
+            saveGame();
+            location.reload();
+        });
 
         function toggleInv() { if (isPaused) return; invOpen = !invOpen; invScreen.style.display = invOpen ? 'block' : 'none'; }
         function togglePause() { isPaused = !isPaused; document.getElementById('pause-menu').style.display = isPaused ? 'block' : 'none'; }
         function setEquipped(id) { equipped = id; updateInvUI(); updateHandAppearance(); }
 
-        function initClouds() {
-            for(let i=0; i<8; i++) {
-                let cloud = { x: Math.random()*800, y: 20+Math.random()*150, w: 60+Math.random()*100, h: 20+Math.random()*30, speed: 0.1+Math.random()*0.3, el: document.createElement('div') };
-                cloud.el.className = 'cloud';
-                cloud.el.style.width = cloud.w + 'px'; cloud.el.style.height = cloud.h + 'px';
-                viewport.appendChild(cloud.el);
-                clouds.push(cloud);
+        // --- SAVE SYSTEM ---
+        function renderWorldList() {
+            const list = document.getElementById('world-list');
+            list.innerHTML = '';
+            
+            for(let i = 1; i <= 3; i++) {
+                const saveKey = `mc_save_slot_${i}`;
+                const rawData = localStorage.getItem(saveKey);
+                const hasData = rawData !== null;
+                const data = hasData ? JSON.parse(rawData) : null;
+
+                const slot = document.createElement('div');
+                slot.className = 'world-slot';
+                
+                let infoHtml = `
+                    <div class="world-info">
+                        <div class="world-name">World ${i}</div>
+                        <div class="world-details">${hasData ? `Time: ${Math.floor(data.time)} | Pos: ${Math.floor(data.px)},${Math.floor(data.py)}` : 'Empty - Create New'}</div>
+                    </div>
+                `;
+
+                // Delete button
+                let delBtnHtml = hasData ? `<button class="del-btn" onclick="deleteWorld(event, ${i})">Delete</button>` : '';
+
+                slot.innerHTML = infoHtml + delBtnHtml;
+                slot.onclick = (e) => {
+                    if(e.target.classList.contains('del-btn')) return;
+                    startGame(i, data);
+                };
+
+                list.appendChild(slot);
             }
         }
 
-        // --- LIGHTING ENGINE (Breadth-First Search) ---
-        function updateLighting() {
-            // 1. Reset Light Array
-            // SKY blocks = 15. CAVE/SOLID blocks = 0 initially.
-            // Queue holds {r,c} of blocks that have light to spread.
-            let queue = [];
-            
-            for(let r=0; r<ROWS; r++) {
-                for(let c=0; c<COLS; c++) {
-                    if (mapData[r][c] === TYPES.SKY) {
-                        lightLevels[r][c] = 15;
-                        queue.push({r, c});
-                    } else {
-                        lightLevels[r][c] = 0;
-                    }
-                }
+        window.deleteWorld = function(e, slot) {
+            e.stopPropagation();
+            if(confirm(`Delete World ${slot}?`)) {
+                localStorage.removeItem(`mc_save_slot_${slot}`);
+                renderWorldList();
             }
+        };
 
-            // 2. Spread Light (BFS)
-            // Directions: Up, Down, Left, Right
-            const dirs = [[0,1], [0,-1], [1,0], [-1,0]];
-
-            while(queue.length > 0) {
-                let curr = queue.shift();
-                let r = curr.r;
-                let c = curr.c;
-                let currentLight = lightLevels[r][c];
-
-                if (currentLight <= 0) continue;
-
-                // Attempt to spread to 4 neighbors
-                for(let d of dirs) {
-                    let nr = r + d[0];
-                    let nc = c + d[1];
-
-                    // Bounds Check
-                    if(nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
-                        // We can only pass light through SKY or CAVE blocks (transparent)
-                        // Note: Solid blocks block light, so we don't spread INTO them, 
-                        // but we can light them up slightly if we wanted (optional). 
-                        // Here we only spread INTO air blocks for the gradient.
-                        
-                        let type = mapData[nr][nc];
-                        let canPass = (type === TYPES.CAVE || type === TYPES.SKY);
-                        
-                        // If neighbor can accept light, and its current light is less than (current - 1)
-                        if (canPass && lightLevels[nr][nc] < currentLight - 1) {
-                            lightLevels[nr][nc] = currentLight - 1;
-                            queue.push({r: nr, c: nc});
-                        }
-                    }
-                }
-            }
-
-            // 3. Update Visuals for CAVE blocks
-            // We only need to adjust opacity of .cave-air blocks.
-            // Light 15 = Opacity 0 (Transparent). Light 0 = Opacity 1 (Black).
-            for(let r=0; r<ROWS; r++) {
-                for(let c=0; c<COLS; c++) {
-                    if (mapData[r][c] === TYPES.CAVE) {
-                        let div = blockDivs[r][c];
-                        if (div) {
-                            let lvl = lightLevels[r][c];
-                            // Calculate opacity: Max light (15) -> 0 opacity. Min light (0) -> 1 opacity.
-                            // We use a slight curve or linear mapping.
-                            let opacity = 1 - (lvl / 15);
-                            div.style.opacity = opacity;
-                        }
-                    }
-                }
+        function saveGame() {
+            const saveData = {
+                map: mapData,
+                inv: inventory,
+                px: px,
+                py: py,
+                time: gameTime,
+                eq: equipped,
+                heights: surfaceHeights
+            };
+            try {
+                localStorage.setItem(`mc_save_slot_${currentSlot}`, JSON.stringify(saveData));
+                showSaveNotification();
+            } catch (e) {
+                alert("Save failed! Storage might be full.");
             }
         }
 
-        function createBlock(r, c, type) {
-            if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
-            if(blockDivs[r][c]) { blockDivs[r][c].remove(); blockDivs[r][c] = null; }
-            
-            mapData[r][c] = type;
+        function showSaveNotification() {
+            saveNotify.style.opacity = 1;
+            setTimeout(() => saveNotify.style.opacity = 0, 2000);
+        }
 
-            if (type === TYPES.SKY) return;
-
-            const div = document.createElement('div');
-            div.className = 'block ' + CLASSES[type];
-            div.style.left = (c * B_SIZE) + "px";
-            div.style.top = (r * B_SIZE) + "px";
+        function startGame(slotIndex, loadedData) {
+            currentSlot = slotIndex;
+            worldScreen.style.display = 'none';
+            viewport.style.display = 'block';
+            document.getElementById('hotbar').style.display = 'flex';
             
-            // If it's a cave block, set initial opacity based on existing light data (if any)
-            if (type === TYPES.CAVE && lightLevels[r] && lightLevels[r][c] !== undefined) {
-                div.style.opacity = 1 - (lightLevels[r][c] / 15);
+            initArrays(); // Reset DOM arrays
+            
+            if (loadedData) {
+                // Load Data
+                mapData = loadedData.map;
+                inventory = loadedData.inv;
+                px = loadedData.px;
+                py = loadedData.py;
+                gameTime = loadedData.time;
+                equipped = loadedData.eq || 1;
+                surfaceHeights = loadedData.heights || [];
+                
+                // We need to visually build the blocks from the loaded array
+                buildWorldFromData(); 
+            } else {
+                // New Game
+                generateNewTerrain();
+                carveCaves();
+                buildWorldFromData();
+                // Set default spawn
+                px = 20; 
+                py = surfaceHeights[20] - 5;
             }
 
-            world.appendChild(div);
-            blockDivs[r][c] = div;
+            initClouds();
+            updateLighting();
+            updateInvUI();
+            updateHandAppearance();
+
+            // Reset cam
+            smoothCam.x = -(px * B_SIZE * ZOOM) + 425;
+            smoothCam.y = -(py * B_SIZE * ZOOM) + 300;
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- WORLD GENERATION ---
+
+        function initArrays() {
+            // Clear existing DOM
+            const existing = world.querySelectorAll('.block');
+            existing.forEach(b => b.remove());
+            world.style.width = (COLS * B_SIZE) + "px"; 
+            world.style.height = (ROWS * B_SIZE) + "px";
+            
+            blockDivs = [];
+            lightLevels = [];
+            for (let r = 0; r < ROWS; r++) { 
+                blockDivs[r] = []; 
+                lightLevels[r] = []; 
+                if(!mapData[r]) mapData[r] = [];
+            }
+        }
+
+        function generateNewTerrain() {
+            // Fresh Map Arrays
+            mapData = [];
+            for(let r=0; r<ROWS; r++) {
+                mapData[r] = [];
+                for(let c=0; c<COLS; c++) mapData[r][c] = TYPES.SKY;
+            }
+
+            // Height Map
+            let currentHeight = 25;
+            surfaceHeights = [];
+            for (let c = 0; c < COLS; c++) {
+                let biome = c < 80 ? "plains" : (c < 180 ? "mountains" : "desert");
+                if (biome === "plains") { if (Math.random() < 0.2) currentHeight += (Math.random() > 0.5 ? 1 : -1); currentHeight = Math.max(22, Math.min(28, currentHeight)); }
+                else if (biome === "mountains") { if (Math.random() < 0.7) currentHeight += (Math.random() > 0.4 ? -1 : 1); currentHeight = Math.max(5, Math.min(25, currentHeight)); }
+                else if (biome === "desert") { if (Math.random() < 0.3) currentHeight += (Math.random() > 0.5 ? 1 : -1); currentHeight = Math.max(20, Math.min(26, currentHeight)); }
+                surfaceHeights[c] = Math.floor(currentHeight);
+            }
+
+            // Fill Blocks
+            for (let c = 0; c < COLS; c++) {
+                let ground = surfaceHeights[c];
+                let biome = c < 80 ? "plains" : (c < 180 ? "mountains" : "desert");
+
+                for (let r = 0; r < ROWS; r++) {
+                    if(r >= ground) {
+                        let type = TYPES.STONE;
+                        if (r === ground) type = (biome === "desert") ? TYPES.SAND : (biome === "mountains" ? TYPES.STONE : TYPES.GRASS);
+                        else if (r < ground + 4) type = (biome === "desert") ? TYPES.SANDSTONE : (biome === "mountains" ? TYPES.STONE : TYPES.DIRT);
+                        else if (Math.random() < 0.05) type = TYPES.COAL;
+                        else if (r > ground + 10 && Math.random() < 0.03) type = TYPES.IRON;
+                        else if (r > ground + 15 && Math.random() < 0.02) type = TYPES.GOLD;
+                        else if (r > ground + 20 && Math.random() < 0.01) type = TYPES.DIAMOND;
+                        mapData[r][c] = type;
+                    }
+                }
+                if (biome === "plains" && Math.random() < 0.1 && c > 5 && c < 75) generateFancyTree(ground - 1, c);
+                else if (biome === "desert" && Math.random() < 0.08 && c > 185) for (let i = 1; i <= (2+Math.random()*2); i++) forceBlock(ground - i, c, TYPES.CACTUS);
+            }
+        }
+
+        // Helper for tree gen (writes to mapData directly)
+        function forceBlock(r, c, type) {
+            if (r >= 0 && r < ROWS && c >= 0 && c < COLS) mapData[r][c] = type;
         }
 
         function generateFancyTree(baseR, baseC) {
             let height = 4 + Math.floor(Math.random() * 4);
-            for (let i = 0; i < height; i++) createBlock(baseR - i, baseC, TYPES.WOOD);
+            for (let i = 0; i < height; i++) forceBlock(baseR - i, baseC, TYPES.WOOD);
             let leafStart = baseR - height + 1; 
             let leafEnd = baseR - height - 2;   
             for (let r = leafStart; r >= leafEnd; r--) {
                 let width = (r === leafStart ? 2 : (r === leafStart - 1 ? 3 : (r === leafStart - 2 ? 2 : 1)));
                 for (let c = baseC - width; c <= baseC + width; c++) {
                     if (Math.random() > 0.8 && (c === baseC - width || c === baseC + width)) continue;
-                    if (mapData[r] && mapData[r][c] === TYPES.SKY) createBlock(r, c, TYPES.LEAVES);
+                    if (mapData[r] && mapData[r][c] === TYPES.SKY) forceBlock(r, c, TYPES.LEAVES);
                 }
             }
-            if (mapData[baseR - height][baseC] === TYPES.SKY) createBlock(baseR - height, baseC, TYPES.LEAVES);
-        }
-
-        function createParticles(r, c, type) {
-            for(let i=0; i<4; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle ' + CLASSES[type];
-                p.style.left = ((c * B_SIZE) + 10) + "px";
-                p.style.top = ((r * B_SIZE) + 10) + "px";
-                world.appendChild(p);
-                requestAnimationFrame(() => {
-                    p.style.transform = `translate(${(Math.random()-0.5)*60}px, ${(Math.random()-0.5)*60}px) scale(0)`;
-                    p.style.opacity = "0";
-                });
-                setTimeout(() => p.remove(), 400);
-            }
+            if (mapData[baseR - height][baseC] === TYPES.SKY) forceBlock(baseR - height, baseC, TYPES.LEAVES);
         }
 
         function carveCaves() {
@@ -341,7 +425,7 @@
                                 let nc = Math.round(c + dc);
                                 if (nc >= 0 && nc < COLS && nr < ROWS && nr > surfaceHeights[nc] + 4) {
                                     if(mapData[nr][nc] !== TYPES.SKY && mapData[nr][nc] !== TYPES.CAVE) {
-                                        createBlock(nr, nc, TYPES.CAVE);
+                                        mapData[nr][nc] = TYPES.CAVE;
                                     }
                                 }
                             }
@@ -355,65 +439,123 @@
             }
         }
 
-        function initWorld() {
-            const existingBlocks = world.querySelectorAll('.block'); existingBlocks.forEach(b => b.remove());
-            world.style.width = (COLS * B_SIZE) + "px"; world.style.height = (ROWS * B_SIZE) + "px";
-            
-            let currentHeight = 25;
-            surfaceHeights = [];
-
-            for (let c = 0; c < COLS; c++) {
-                let biome = c < 80 ? "plains" : (c < 180 ? "mountains" : "desert");
-                if (biome === "plains") { if (Math.random() < 0.2) currentHeight += (Math.random() > 0.5 ? 1 : -1); currentHeight = Math.max(22, Math.min(28, currentHeight)); }
-                else if (biome === "mountains") { if (Math.random() < 0.7) currentHeight += (Math.random() > 0.4 ? -1 : 1); currentHeight = Math.max(5, Math.min(25, currentHeight)); }
-                else if (biome === "desert") { if (Math.random() < 0.3) currentHeight += (Math.random() > 0.5 ? 1 : -1); currentHeight = Math.max(20, Math.min(26, currentHeight)); }
-                surfaceHeights[c] = Math.floor(currentHeight);
-            }
-
-            // Init Arrays
-            for (let r = 0; r < ROWS; r++) { 
-                mapData[r] = []; 
-                blockDivs[r] = []; 
-                lightLevels[r] = []; // Initialize light array
-                for (let c = 0; c < COLS; c++) { 
-                    mapData[r][c] = TYPES.SKY; 
-                    blockDivs[r][c] = null; 
-                    lightLevels[r][c] = 0;
-                } 
-            }
-
-            for (let c = 0; c < COLS; c++) {
-                let ground = surfaceHeights[c];
-                let biome = c < 80 ? "plains" : (c < 180 ? "mountains" : "desert");
-                if(c === 20) py = ground - 3; 
-
-                for (let r = 0; r < ROWS; r++) {
-                    if(r >= ground) {
-                        let type = TYPES.STONE;
-                        if (r === ground) type = (biome === "desert") ? TYPES.SAND : (biome === "mountains" ? TYPES.STONE : TYPES.GRASS);
-                        else if (r < ground + 4) type = (biome === "desert") ? TYPES.SANDSTONE : (biome === "mountains" ? TYPES.STONE : TYPES.DIRT);
-                        else if (Math.random() < 0.05) type = TYPES.COAL;
-                        else if (r > ground + 10 && Math.random() < 0.03) type = TYPES.IRON;
-                        else if (r > ground + 15 && Math.random() < 0.02) type = TYPES.GOLD;
-                        else if (r > ground + 20 && Math.random() < 0.01) type = TYPES.DIAMOND;
-                        mapData[r][c] = type;
+        function buildWorldFromData() {
+            // Iterate over mapData and create DOM elements
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if(mapData[r][c] !== TYPES.SKY) {
+                        createBlockVisual(r, c, mapData[r][c]);
                     }
                 }
-                if (biome === "plains" && Math.random() < 0.1 && c > 5 && c < 75) generateFancyTree(ground - 1, c);
-                else if (biome === "desert" && Math.random() < 0.08 && c > 185) for (let i = 1; i <= (2+Math.random()*2); i++) createBlock(ground - i, c, TYPES.CACTUS);
+            }
+        }
+
+        function createBlockVisual(r, c, type) {
+            if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
+            if(blockDivs[r][c]) { blockDivs[r][c].remove(); blockDivs[r][c] = null; }
+            
+            if (type === TYPES.SKY) return;
+
+            const div = document.createElement('div');
+            div.className = 'block ' + CLASSES[type];
+            div.style.left = (c * B_SIZE) + "px";
+            div.style.top = (r * B_SIZE) + "px";
+            
+            // Visual opacity for caves handled by lighting update later
+            world.appendChild(div);
+            blockDivs[r][c] = div;
+        }
+
+        // --- DYNAMIC BLOCK CREATION (During Play) ---
+        function createBlock(r, c, type) {
+            mapData[r][c] = type;
+            createBlockVisual(r, c, type);
+            // Re-apply lighting immediately to new block
+            if (type === TYPES.CAVE && lightLevels[r] && lightLevels[r][c] !== undefined) {
+                 if(blockDivs[r][c]) blockDivs[r][c].style.opacity = 1 - (lightLevels[r][c] / 15);
+            }
+        }
+
+        function initClouds() {
+            clouds.forEach(c => c.el.remove());
+            clouds = [];
+            for(let i=0; i<8; i++) {
+                let cloud = { x: Math.random()*800, y: 20+Math.random()*150, w: 60+Math.random()*100, h: 20+Math.random()*30, speed: 0.1+Math.random()*0.3, el: document.createElement('div') };
+                cloud.el.className = 'cloud';
+                cloud.el.style.width = cloud.w + 'px'; cloud.el.style.height = cloud.h + 'px';
+                viewport.appendChild(cloud.el);
+                clouds.push(cloud);
+            }
+        }
+
+        // --- LIGHTING ENGINE (Breadth-First Search) ---
+        function updateLighting() {
+            let queue = [];
+            
+            for(let r=0; r<ROWS; r++) {
+                for(let c=0; c<COLS; c++) {
+                    if (mapData[r][c] === TYPES.SKY) {
+                        lightLevels[r][c] = 15;
+                        queue.push({r, c});
+                    } else {
+                        lightLevels[r][c] = 0;
+                    }
+                }
             }
 
-            carveCaves();
-            
-            // Calculate Lights BEFORE rendering
-            updateLighting();
+            const dirs = [[0,1], [0,-1], [1,0], [-1,0]];
+
+            while(queue.length > 0) {
+                let curr = queue.shift();
+                let r = curr.r;
+                let c = curr.c;
+                let currentLight = lightLevels[r][c];
+
+                if (currentLight <= 0) continue;
+
+                for(let d of dirs) {
+                    let nr = r + d[0];
+                    let nc = c + d[1];
+
+                    if(nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
+                        let type = mapData[nr][nc];
+                        let canPass = (type === TYPES.CAVE || type === TYPES.SKY);
+                        
+                        if (canPass && lightLevels[nr][nc] < currentLight - 1) {
+                            lightLevels[nr][nc] = currentLight - 1;
+                            queue.push({r: nr, c: nc});
+                        }
+                    }
+                }
+            }
 
             for(let r=0; r<ROWS; r++) {
                 for(let c=0; c<COLS; c++) {
-                    if(mapData[r][c] !== TYPES.SKY) createBlock(r, c, mapData[r][c]);
+                    if (mapData[r][c] === TYPES.CAVE) {
+                        let div = blockDivs[r][c];
+                        if (div) {
+                            let lvl = lightLevels[r][c];
+                            let opacity = 1 - (lvl / 15);
+                            div.style.opacity = opacity;
+                        }
+                    }
                 }
             }
-            updateInvUI();
+        }
+
+        function createParticles(r, c, type) {
+            for(let i=0; i<4; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle ' + CLASSES[type];
+                p.style.left = ((c * B_SIZE) + 10) + "px";
+                p.style.top = ((r * B_SIZE) + 10) + "px";
+                world.appendChild(p);
+                requestAnimationFrame(() => {
+                    p.style.transform = `translate(${(Math.random()-0.5)*60}px, ${(Math.random()-0.5)*60}px) scale(0)`;
+                    p.style.opacity = "0";
+                });
+                setTimeout(() => p.remove(), 400);
+            }
         }
 
         function updateInvUI() {
@@ -477,11 +619,7 @@
                 if (mapData[my][mx] === TYPES.SKY || mapData[my][mx] === TYPES.CAVE) {
                     if(inventory[equipped] > 0) {
                         createBlock(my, mx, equipped); inventory[equipped]--; 
-                        
-                        // Placing a solid block blocks light, so we should update lights
-                        // Optimization: For this demo, we'll just update lights immediately
                         updateLighting();
-                        
                         updateInvUI(); updateHandAppearance();
                     }
                 }
@@ -498,9 +636,7 @@
                             let newType = (my > surfaceHeights[mx]) ? TYPES.CAVE : TYPES.SKY;
                             createBlock(my, mx, newType); 
                             
-                            // Breaking a block might let light in
                             updateLighting();
-
                             updateInvUI(); updateHandAppearance(); isBreaking = false;
                         }, 300);
                     }
@@ -510,10 +646,14 @@
 
         function gameLoop() {
             if (!invOpen && !isPaused) {
-                gameTime += 0.002;
+                gameTime += 0.0005; 
                 let dayFactor = Math.sin(gameTime);
-                sun.style.left = ((Math.cos(gameTime) * 400) + 400) + 'px'; sun.style.top = ((Math.sin(gameTime) * 250) + 300) + 'px';
-                moon.style.left = ((Math.cos(gameTime + Math.PI) * 400) + 400) + 'px'; moon.style.top = ((Math.sin(gameTime + Math.PI) * 250) + 300) + 'px';
+                
+                sun.style.left = ((Math.cos(gameTime) * 900) + 425) + 'px'; 
+                sun.style.top = ((Math.sin(gameTime) * 600) + 600) + 'px';
+                
+                moon.style.left = ((Math.cos(gameTime + Math.PI) * 900) + 425) + 'px'; 
+                moon.style.top = ((Math.sin(gameTime + Math.PI) * 600) + 600) + 'px';
                 
                 let skyR = Math.max(20, 135 * dayFactor + 20), skyG = Math.max(20, 206 * dayFactor + 20), skyB = Math.max(40, 235 * dayFactor + 40);
                 viewport.style.backgroundColor = `rgb(${skyR}, ${skyG}, ${skyB})`;
@@ -538,20 +678,12 @@
 
                 player.style.left = (px * B_SIZE) + "px"; player.style.top = (py * B_SIZE) + "px";
                 
-                // --- SMOOTH CAMERA LOGIC ---
-                // 1. Calculate the "Target" camera position (Centered on player)
-                // 425 is half viewport width, 300 is half viewport height
                 const targetCamX = -(px * B_SIZE * ZOOM) + 425;
                 const targetCamY = -(py * B_SIZE * ZOOM) + 300;
                 
-                // 2. Linear Interpolation (Lerp)
-                // Move current pos 10% of the way to target pos every frame
-                // This creates the "drag" effect
                 smoothCam.x += (targetCamX - smoothCam.x) * 0.1; 
                 smoothCam.y += (targetCamY - smoothCam.y) * 0.1; 
 
-                // 3. Clamp to world bounds so we don't see white space outside world
-                // (Optional: if you want the cam to stop at edges)
                 const clampedX = Math.min(0, Math.max(smoothCam.x, -(COLS*B_SIZE*ZOOM-850)));
                 const clampedY = Math.min(0, Math.max(smoothCam.y, -(ROWS*B_SIZE*ZOOM-600)));
 
