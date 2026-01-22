@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minecraft JS: Celestial Update</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background-color: #111;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0; padding: 0;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        /* --- START SCREEN --- */
+        #start-screen {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: #1a1a1a;
+            z-index: 9999;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        
+        #start-btn {
+            padding: 25px 70px; font-size: 32px;
+            background: #388e3c; color: white;
+            border: 5px solid #fff; cursor: pointer;
+            font-weight: bold; font-family: monospace;
+        }
+        #start-btn:hover { background: #4caf50; }
+
+        /* --- VIEWPORT & SKY --- */
+        #viewport {
+            position: relative;
+            width: 850px; height: 600px;
+            margin: 20px auto;
+            background-color: #87CEEB;
+            border: 6px solid #333;
+            overflow: hidden;
+            display: none; 
+        }
+
+        #sun { position: absolute; width: 60px; height: 60px; background: #ffeb3b; border-radius: 50%; box-shadow: 0 0 40px #fff176; z-index: 1; }
+        #moon { position: absolute; width: 50px; height: 50px; background: #eceff1; border-radius: 50%; box-shadow: 0 0 20px #fff; z-index: 1; }
+        
+        .cloud { position: absolute; background: white; border-radius: 10px; opacity: 0.8; z-index: 2; }
+
+        #world { 
+            position: absolute; 
+            top: 0; left: 0; 
+            will-change: transform; 
+            z-index: 10; 
+            transform-origin: 0 0; 
+        }
+
+        .block { position: absolute; width: 25px; height: 25px; }
+
+        /* Textures */
+        .grass { background: #4caf50; border-top: 4px solid #8bc34a; }
+        .dirt { background: #795548; }
+        .stone { background: #757575; border: 1px solid #616161; }
+        .sand { background: #f4e1a1; border-top: 2px solid #e6cc80; }
+        .sandstone { background: #d3b36b; border: 1px solid #c2a25a; }
+        .wood { background: #5d4037; border: 2px solid #3e2723; }
+        .leaves { background: #2e7d32; opacity: 0.9; }
+        .cactus { background: #1b5e20; border-left: 4px dotted #4caf50; border-right: 4px dotted #4caf50; }
+        .coal { background: #424242; }
+        .iron { background: #d7ccc8; }
+        .gold { background: #ffd700; }
+        .diamond { background: #00e5ff; }
+        .sky { background: transparent; }
+
+        /* --- PLAYER --- */
+        #player { position: absolute; width: 22px; height: 44px; z-index: 100; }
+        #p-head { width: 22px; height: 22px; background: #ffdbac; border: 2px solid #000; }
+        #p-body { width: 18px; height: 22px; background: #0288d1; border: 2px solid #000; margin-left: 2px; border-top: none; }
+        #tool { position: absolute; top: 18px; right: -10px; width: 18px; height: 6px; background: #5d4037; transform-origin: left; transform: rotate(-40deg); }
+        .swing { animation: swing 0.15s ease-in-out; }
+        @keyframes swing { 0% { transform: rotate(-40deg); } 50% { transform: rotate(50deg); } 100% { transform: rotate(-40deg); } }
+
+        #selector { position: absolute; width: 25px; height: 25px; border: 2px solid #fff; z-index: 90; pointer-events: none; }
+
+        /* --- INVENTORY --- */
+        #inv-screen {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 550px; background: #2c2c2c; border: 4px solid #fff; padding: 20px; z-index: 1000;
+        }
+        .inv-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+        .slot { background: #444; padding: 5px; border: 2px solid #111; cursor: pointer; text-align: center; }
+        .slot.active { border-color: #ffee58; background: #555; }
+
+        #debug { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 8px; font-size: 12px; z-index: 1001; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <h1 style="font-size: 50px; color: #4caf50; margin: 0;">MINECRAFT: CELESTIAL</h1>
+        <p style="color: #888; margin-bottom: 30px;">Day & Night Cycle • Dynamic Clouds</p>
+        <button id="start-btn">START WORLD</button>
+    </div>
+
+    <div id="debug">Ready...</div>
+
+    <div id="viewport">
+        <div id="sun"></div>
+        <div id="moon"></div>
+        <div id="world">
+            <div id="player"><div id="p-head"></div><div id="p-body"></div><div id="tool"></div></div>
+            <div id="selector"></div>
+        </div>
+    </div>
+
+    <div id="inv-screen">
+        <h2 style="margin-top:0;">INVENTORY</h2>
+        <div class="inv-grid" id="inv-grid"></div>
+        <button id="close-inv-btn" style="margin-top:20px; width:100%; padding: 10px; cursor:pointer;">CLOSE (E)</button>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const B_SIZE = 25;
+        const COLS = 300; 
+        const ROWS = 50; 
+        const ZOOM = 1.6; 
+
+        const TYPES = { SKY:0, GRASS:1, DIRT:2, STONE:3, COAL:4, IRON:5, GOLD:6, DIAMOND:7, EMERALD:8, SAND:9, SANDSTONE:10, WOOD:11, LEAVES:12, CACTUS:13 };
+        const CLASSES = ["sky", "grass", "dirt", "stone", "coal", "iron", "gold", "diamond", "emerald", "sand", "sandstone", "wood", "leaves", "cactus"];
+        
+        let inventory = {};
+        for(let i=1; i<CLASSES.length; i++) inventory[i] = 0;
+        
+        let equipped = 1;
+        let invOpen = false;
+        let mapData = [];
+        let blockDivs = [];
+        let px = 20, py = 5; 
+        let vx = 0, vy = 0, grounded = false;
+        let keys = {};
+        let gameTime = 0;
+        const clouds = [];
+
+        // --- DOM ELEMENTS ---
+        const world = document.getElementById('world');
+        const viewport = document.getElementById('viewport');
+        const player = document.getElementById('player');
+        const tool = document.getElementById('tool');
+        const debug = document.getElementById('debug');
+        const sun = document.getElementById('sun');
+        const moon = document.getElementById('moon');
+        const startBtn = document.getElementById('start-btn');
+        const invScreen = document.getElementById('inv-screen');
+        const closeInvBtn = document.getElementById('close-inv-btn');
+
+        // --- EVENT LISTENERS ---
+        startBtn.addEventListener('click', () => {
+            document.getElementById('start-screen').style.display = 'none';
+            viewport.style.display = 'block';
+            initWorld();
+            initClouds();
+            requestAnimationFrame(gameLoop);
+        });
+
+        closeInvBtn.addEventListener('click', toggleInv);
+
+        function toggleInv() {
+            invOpen = !invOpen;
+            invScreen.style.display = invOpen ? 'block' : 'none';
+        }
+
+        function setEquipped(id) {
+            equipped = id;
+            updateInvUI();
+        }
+
+        // --- WORLD GENERATION ---
+        function initClouds() {
+            for(let i=0; i<8; i++) {
+                let cloud = {
+                    x: Math.random() * 800,
+                    y: 20 + Math.random() * 150,
+                    w: 60 + Math.random() * 100,
+                    h: 20 + Math.random() * 30,
+                    speed: 0.1 + Math.random() * 0.3,
+                    el: document.createElement('div')
+                };
+                cloud.el.className = 'cloud';
+                cloud.el.style.width = cloud.w + 'px';
+                cloud.el.style.height = cloud.h + 'px';
+                viewport.appendChild(cloud.el);
+                clouds.push(cloud);
+            }
+        }
+
+        function createBlock(r, c, type) {
+            if (type === TYPES.SKY) return;
+            const div = document.createElement('div');
+            div.className = 'block ' + CLASSES[type];
+            div.style.left = (c * B_SIZE) + "px";
+            div.style.top = (r * B_SIZE) + "px";
+            world.appendChild(div);
+            mapData[r][c] = type;
+            blockDivs[r][c] = div;
+        }
+
+        function initWorld() {
+            world.style.width = (COLS * B_SIZE) + "px";
+            world.style.height = (ROWS * B_SIZE) + "px";
+            let currentHeight = 25; 
+            let heights = [];
+
+            for (let c = 0; c < COLS; c++) {
+                let biome = c < 80 ? "plains" : (c < 180 ? "mountains" : "desert");
+                if (biome === "plains") {
+                    if (Math.random() < 0.2) currentHeight += (Math.random() > 0.5 ? 1 : -1);
+                    currentHeight = Math.max(22, Math.min(28, currentHeight));
+                } else if (biome === "mountains") {
+                    if (Math.random() < 0.7) currentHeight += (Math.random() > 0.4 ? -1 : 1);
+                    currentHeight = Math.max(5, Math.min(25, currentHeight));
+                } else if (biome === "desert") {
+                    if (Math.random() < 0.3) currentHeight += (Math.random() > 0.5 ? 1 : -1);
+                    currentHeight = Math.max(20, Math.min(26, currentHeight));
+                }
+                heights[c] = Math.floor(currentHeight);
+            }
+
+            for (let r = 0; r < ROWS; r++) {
+                mapData[r] = []; blockDivs[r] = [];
+                for (let c = 0; c < COLS; c++) { mapData[r][c] = TYPES.SKY; blockDivs[r][c] = null; }
+            }
+
+            for (let c = 0; c < COLS; c++) {
+                let ground = heights[c];
+                let biome = c < 80 ? "plains" : (c < 180 ? "mountains" : "desert");
+                if(c === 20) py = ground - 3; 
+
+                for (let r = ground; r < ROWS; r++) {
+                    let type = TYPES.STONE;
+                    if (r === ground) type = (biome === "desert") ? TYPES.SAND : (biome === "mountains" ? TYPES.STONE : TYPES.GRASS);
+                    else if (r < ground + 4) type = (biome === "desert") ? TYPES.SANDSTONE : (biome === "mountains" ? TYPES.STONE : TYPES.DIRT);
+                    else if (Math.random() < 0.05) type = TYPES.COAL;
+                    createBlock(r, c, type);
+                }
+
+                if (biome === "plains" && Math.random() < 0.1 && c > 5) {
+                    let h = 3 + Math.floor(Math.random() * 2);
+                    for (let i = 1; i <= h; i++) createBlock(ground - i, c, TYPES.WOOD);
+                    for (let x = -1; x <= 1; x++) for (let y = -2; y <= 0; y++) createBlock(ground - h + y, c + x, TYPES.LEAVES);
+                } else if (biome === "desert" && Math.random() < 0.08 && c > 185) {
+                    let h = 2 + Math.floor(Math.random() * 2);
+                    for (let i = 1; i <= h; i++) createBlock(ground - i, c, TYPES.CACTUS);
+                }
+            }
+            updateInvUI();
+        }
+
+        function updateInvUI() {
+            const grid = document.getElementById('inv-grid');
+            grid.innerHTML = '';
+            for (let i = 1; i < CLASSES.length; i++) {
+                const slot = document.createElement('div');
+                slot.className = `slot ${equipped === i ? 'active' : ''}`;
+                slot.innerHTML = `<div class="block ${CLASSES[i]}" style="position:static; display:inline-block;"></div><div style="font-size:10px;">x${inventory[i]}</div>`;
+                slot.onclick = () => setEquipped(i);
+                grid.appendChild(slot);
+            }
+        }
+
+        // --- CONTROLS ---
+        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+        window.addEventListener('keydown', e => { if(e.key === 'e') toggleInv(); });
+
+        viewport.addEventListener('mousedown', e => {
+            if (invOpen) return;
+            tool.classList.add('swing');
+            setTimeout(() => tool.classList.remove('swing'), 150);
+
+            const rect = world.getBoundingClientRect();
+            const mx = Math.floor(((e.clientX - rect.left) / ZOOM) / B_SIZE);
+            const my = Math.floor(((e.clientY - rect.top) / ZOOM) / B_SIZE);
+
+            if (mx < 0 || mx >= COLS || my < 0 || my >= ROWS) return;
+            const dist = Math.sqrt(Math.pow(mx - px, 2) + Math.pow(my - py, 2));
+            if (dist > 6) return;
+
+            if (e.shiftKey) {
+                if (mapData[my][mx] === TYPES.SKY) createBlock(my, mx, equipped);
+            } else {
+                if (mapData[my][mx] !== TYPES.SKY) {
+                    inventory[mapData[my][mx]]++;
+                    if(blockDivs[my][mx]) blockDivs[my][mx].remove();
+                    mapData[my][mx] = TYPES.SKY;
+                    updateInvUI();
+                }
+            }
+        });
+
+        // --- GAME LOOP ---
+        function gameLoop() {
+            if (!invOpen) {
+                gameTime += 0.002;
+                let dayFactor = Math.sin(gameTime);
+                let sunX = (Math.cos(gameTime) * 400) + 400;
+                let sunY = (Math.sin(gameTime) * 250) + 300;
+                let moonX = (Math.cos(gameTime + Math.PI) * 400) + 400;
+                let moonY = (Math.sin(gameTime + Math.PI) * 250) + 300;
+
+                sun.style.left = sunX + 'px'; sun.style.top = sunY + 'px';
+                moon.style.left = moonX + 'px'; moon.style.top = moonY + 'px';
+
+                let skyR = Math.max(20, 135 * dayFactor + 20);
+                let skyG = Math.max(20, 206 * dayFactor + 20);
+                let skyB = Math.max(40, 235 * dayFactor + 40);
+                viewport.style.backgroundColor = `rgb(${skyR}, ${skyG}, ${skyB})`;
+
+                clouds.forEach(c => {
+                    c.x += c.speed;
+                    if(c.x > 850) c.x = -c.w;
+                    c.el.style.left = c.x + 'px';
+                    c.el.style.top = c.y + 'px';
+                });
+
+                const currentSpeed = keys['shift'] ? 0.28 : 0.15;
+                vx = 0;
+                if (keys['a'] || keys['arrowleft']) vx = -currentSpeed;
+                if (keys['d'] || keys['arrowright']) vx = currentSpeed;
+                if (vx !== 0) player.style.transform = `scaleX(${vx > 0 ? 1 : -1})`;
+                if (!isSolid(px + vx, py + 0.1) && !isSolid(px + vx, py + 1.7)) px += vx;
+
+                vy += 0.04; 
+                if ((keys['w'] || keys[' '] || keys['arrowup']) && grounded) { vy = -0.55; grounded = false; }
+                if (isSolid(px, py + vy + 1.8) || isSolid(px, py + vy + 0.1)) {
+                    if (vy > 0) grounded = true;
+                    vy = 0;
+                } else { py += vy; grounded = false; }
+
+                player.style.left = (px * B_SIZE) + "px";
+                player.style.top = (py * B_SIZE) + "px";
+
+                const camX = -(px * B_SIZE * ZOOM) + 425;
+                const camY = -(py * B_SIZE * ZOOM) + 300;
+                
+                const limitX = -(COLS * B_SIZE * ZOOM - 850);
+                const limitY = -(ROWS * B_SIZE * ZOOM - 600);
+                
+                world.style.transform = `translate(${Math.min(0, Math.max(camX, limitX))}px, ${Math.min(0, Math.max(camY, limitY))}px) scale(${ZOOM})`;
+                
+                debug.innerText = `Time: ${dayFactor > 0 ? 'Day' : 'Night'} | Biome: ${px < 80 ? 'Plains' : (px < 180 ? 'Mountains' : 'Desert')}`;
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        function isSolid(x, y) {
+            const r = Math.floor(y), c = Math.round(x);
+            if(r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
+            return (mapData[r][c] !== TYPES.SKY);
+        }
+    </script>
+</body>
+</html>
